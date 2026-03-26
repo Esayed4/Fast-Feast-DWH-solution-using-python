@@ -1,0 +1,89 @@
+fastfeast-pipeline/
+│
+├── config/
+│   ├── settings.py                  # DB connections, paths, thresholds
+│   ├── logging_config.py            # Structured logging setup
+│   └── schemas.py                   # Column names, expected dtypes, PII fields, required fields per table
+│
+├── data/
+│   ├── input/
+│   │   ├── batch/
+│   │   │   └── YYYY-MM-DD/          # Daily batch files land here
+│   │   └── stream/
+│   │       └── YYYY-MM-DD/
+│   │           └── HH/              # Hourly stream files land here
+│   ├── master/                      # Source of truth (generator output)
+│   ├── warehouse.db                 # Analytics DB (no PII)
+│   ├── pii_db.db                    # Secured permanent store: full PII for customers, drivers, agents
+│   └── orphan_db.db                 # Orphan records pending FK resolution
+│
+├── pipeline/
+│   │
+│   ├── shared_scripts/              # Shared logic used by both batch and stream
+│   │   ├── __init__.py
+│   │   ├── loader.py                # Reads CSV/JSON into DataFrames (batch + stream)
+│   │   ├── flatten_dims.py          # Flattens nested JSON fields into flat dim columns (batch + stream)
+│   │   │
+│   │   ├── validator/               # Validation stages — one file per check
+│   │   │   ├── __init__.py
+│   │   │   ├── columns_check.py     # Checks all required columns exist
+│   │   │   ├── dtypes_check.py      # Checks data types match schema
+│   │   │   ├── nulls_check.py       # Checks nulls in non-nullable fields
+│   │   │   └── format_check.py      # Validates phone, email, date formats
+│   │   │
+│   │   ├── deduplicator.py          # Removes already-loaded records (batch + stream)
+│   │   ├── orphan_detector.py       # Ensures all FKs exist → appends or sends to orphan_db
+│   │   ├── writer.py                # Writes clean data to warehouse (normal DWH)
+│   │   ├── pii_writer.py            # Writes full PII rows to pii_db
+│   │   ├── exceptions.py            # Custom pipeline exceptions
+│   │   └── utils.py                 # Date parsing, type casting helpers
+│   │
+│   ├── batch/                       # Batch-specific logic only
+│   │   ├── __init__.py
+│   │   ├── detector.py              # Watches for new YYYY-MM-DD/ batch folders
+│   │   ├── clean_loader.py          # Masks PII → passes full row to pii_writer → returns analytics-ready df
+│   │   │
+│   │   └── transformer/             # Transformation steps — one file per task
+│   │       ├── __init__.py
+│   │       ├── generate_dim_date.py # Generates full dim_date rows from date values
+│   │       └── scd2.py              # Applies SCD2 logic for customers & drivers
+│   │
+│   ├── stream/                      # Stream-specific logic only
+│   │   ├── __init__.py
+│   │   ├── detector.py              # Watches for new YYYY-MM-DD/HH/ stream folders
+│   │   └── transformer.py           # Calc resolve_from_creating_min, resolve_from_response_min, delay_of_resolving, resolved_on_time
+│   │
+│   └── orchestrator.py              # Controls daily execution order:
+│                                          # 1) batch dims → 2) load dims → 3) start stream watcher
+│
+├── warehouse/
+│   ├── __init__.py
+│   ├── connection.py                # DB connection manager
+│   └── schema.sql                   # CREATE TABLE statements (dim + fact)
+│
+├── quarantine/                      # Bad data storage — files and records that failed validation
+│   ├── bad_files/                   # Entire files that failed file-level validation
+│   │   └── YYYY-MM-DD/              # Organized by date for traceability
+│   └── quarantine.db                # DB storing individual bad records that failed row-level checks
+│
+├── orphan_pipeline/                 # Orphan records pipeline — FK violations pending resolution
+│   ├── __init__.py
+│   ├── store.py                     # Saves orphan records to orphan_db when FK not found
+│   └── resolver.py                  # Re-checks orphan_db when new dims arrive → promotes valid records
+│
+├── logging/
+│   ├── __init__.py
+│   ├── pipeline_logger.py           # Structured JSON logger
+│   ├── alert_handler.py             # Async email alerting (separate thread)
+│   └── logs/
+│       └── YYYY-MM-DD.log
+│
+├── data_generators/
+│   ├── generate_master_data.py
+│   ├── generate_batch_data.py
+│   ├── generate_stream_data.py
+│   ├── add_new_customers.py
+│   ├── add_new_drivers.py
+│   └── simulate_day.py
+│
+└── .env                             # No hardcoded values
