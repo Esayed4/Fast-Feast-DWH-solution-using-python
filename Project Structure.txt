@@ -21,7 +21,7 @@ fastfeast-pipeline/
 │   │
 │   ├── shared_scripts/              # Shared logic used by both batch and stream
 │   │   ├── __init__.py
-│   │   ├── loader.py                # Reads CSV/JSON into DataFrames (batch + stream)
+│   │   ├── extractor.py                # Reads CSV/JSON into DataFrames (batch + stream)
 │   │   ├── flatten_dims.py          # Flattens nested JSON fields into flat dim columns (batch + stream)
 │   │   │
 │   │   ├── validator/               # Validation stages — one file per check
