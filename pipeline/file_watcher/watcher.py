@@ -1,6 +1,4 @@
 # pipline file watcher
-from datetime import datetime
-from importlib.resources import path
 import re
 import time
 from pathlib import Path
@@ -8,7 +6,7 @@ from config.settings import STREAM_INPUT_DIR
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from pipeline.pipeline import run_stream
-from queue import Queue
+from queue import Queue, Empty
 
 
 HOUR_DIR_RE = re.compile(r"^\d{2}$")
@@ -31,9 +29,9 @@ class StreamEventHandler(FileSystemEventHandler):
         if not self._is_valid_hour_dir(path):
             return
         path_str = str(path)
-        if path_str in self.seen:
+        if path_str in self.seen_hours:
             return
-        self.seen.add(path_str)
+        self.seen_hours.add(path_str)
 
         date_str = path.parent.name
         hour_str = path.name
@@ -97,12 +95,12 @@ def watcher(run_date = None):
     try:
         while True:
             try:
-                date_str, hour_str = processing_queue.get_nowait()
+                date_str, hour_str = processing_queue.get(timeout=1)  # Wait for new items with a timeout to allow graceful shutdown
                 print(f"[QUEUE] Processing {date_str}/{hour_str}")
                 run_stream(date_str, hour_str)
 
-            except Exception as e:
-                Queue.empty
+            except Empty:
+                time.sleep(0.5)
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
