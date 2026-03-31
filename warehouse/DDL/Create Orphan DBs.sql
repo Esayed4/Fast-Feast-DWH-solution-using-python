@@ -1,5 +1,4 @@
  
-
 CREATE TABLE orphan_fact_orders (
     orphan_id           SERIAL PRIMARY KEY,
     rejection_reason    TEXT,                -- Detailed error message
@@ -26,8 +25,7 @@ CREATE TABLE orphan_fact_orders (
 );
 
 
-
-
+  
 CREATE TABLE orphan_fact_tickets (
     orphan_id           SERIAL PRIMARY KEY,
     rejection_reason    TEXT,
@@ -36,11 +34,11 @@ CREATE TABLE orphan_fact_tickets (
     ticket_id               INT ,           
     order_id                INT,                       -- Reference to fact_orders or source
     created_date_id         INT,                       -- FK to dim_date (YYYYMMDD)
-    customer_sk             INT REFERENCES dim_customer(customer_sk),
-    restaurant_id           INT REFERENCES dim_restaurant(restaurant_sk),
-    driver_sk               INT REFERENCES dim_driver(driver_sk),
+    customer_sk             INT  ,
+    restaurant_id           INT  ,
+    driver_sk               INT  ,
     region_id               INT,
-    agent_sk                INT REFERENCES dim_agent(agent_sk),
+    agent_id                INT  ,
     reason_id               INT,
     priority_id             INT,
     channel_id              INT,

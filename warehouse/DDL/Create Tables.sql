@@ -1,5 +1,4 @@
 create database dwh_db
-
 CREATE TABLE dim_driver (
     driver_sk    SERIAL PRIMARY KEY,           -- Surrogate Key (auto-incrementing)
     driver_id    INT NOT NULL,                 -- Natural Key (from source system)
@@ -42,6 +41,7 @@ CREATE TABLE dim_customer (
 );
 
 -- 4. Create dim_restaurant
+ 
 CREATE TABLE dim_restaurant (
      restaurant_id    INT primary key,
     restaurant_name  VARCHAR(255),
@@ -51,12 +51,12 @@ CREATE TABLE dim_restaurant (
     prep_time_avg_min NUMERIC(5, 2),
     is_active        BOOLEAN DEFAULT TRUE
 );
-
+ 
  CREATE TABLE fact_orders (
     order_id            INT NOT NULL,              -- Removed PRIMARY KEY here
     order_date_id      INT,                       
     customer_sk         INT REFERENCES dim_customer(customer_sk),
-    restaurant_sk       INT REFERENCES dim_restaurant(restaurant_sk),
+    restaurant_id       INT REFERENCES dim_restaurant(restaurant_id),
     driver_sk           INT REFERENCES dim_driver(driver_sk),
     region_id           INT,
     order_time          TIMESTAMP,
@@ -91,16 +91,16 @@ CREATE TABLE dim_agent (
     is_current          BOOLEAN DEFAULT TRUE
 );
 
-
+ 
 CREATE TABLE fact_tickets (
     ticket_id               INT PRIMARY KEY,           -- Natural Key
     order_id                INT,                       -- Reference to fact_orders or source
     created_date_id         INT,                       -- FK to dim_date (YYYYMMDD)
-    customer_sk             INT REFERENCES dim_customer(customer_sk),
-    restaurant_id           INT REFERENCES dim_restaurant(restaurant_sk),
-    driver_sk               INT REFERENCES dim_driver(driver_sk),
+    customer_sk             INT ,
+    restaurant_id           INT ,
+    driver_sk               INT  ,
     region_id               INT,
-    agent_sk                INT REFERENCES dim_agent(agent_sk),
+    agent_sk                INT  ,
     reason_id               INT,
     priority_id             INT,
     channel_id              INT,
