@@ -1,4 +1,6 @@
 # pipline file watcher
+# use python main.py watch or --date YYYY-MM-DD to watch a specific date
+import logging
 import re
 import time
 from pathlib import Path
@@ -8,6 +10,7 @@ from watchdog.events import FileSystemEventHandler
 from pipeline.pipeline import run_stream
 from queue import Queue, Empty
 
+logger = logging.getLogger(__name__)
 
 HOUR_DIR_RE = re.compile(r"^\d{2}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -31,12 +34,19 @@ class StreamEventHandler(FileSystemEventHandler):
         path_str = str(path)
         if path_str in self.seen_hours:
             return
+        
+        time.sleep(3)
         self.seen_hours.add(path_str)
 
         date_str = path.parent.name
         hour_str = path.name
 
-        print(f"[NEW] Detected hour folder: {date_str}/{hour_str}")
+        logger.info(
+            "New stream directory detected",
+            path=path,
+            date=date_str,
+            hour=hour_str,
+        )
         self.processing_queue.put((date_str, hour_str))
 
     def _is_valid_hour_dir(self, path: Path) -> bool:
@@ -73,7 +83,7 @@ def prescan_existing(watch_dir: Path, processing_queue, run_date=None):
 
         for hour_dir in sorted(date_dir.iterdir()):
             if hour_dir.is_dir() and HOUR_DIR_RE.match(hour_dir.name):
-                print(f"[OLD] Found existing hour folder: {date_dir.name}/{hour_dir.name}")
+                logger.info(f"[OLD] Found existing hour folder: {date_dir.name}/{hour_dir.name}")
                 processing_queue.put((date_dir.name, hour_dir.name)) # Add to processing queue
 
 def watcher(run_date = None):
@@ -87,23 +97,28 @@ def watcher(run_date = None):
     observer = Observer()
     observer.schedule(event_handler, str(STREAM_INPUT_DIR), recursive=True)
     observer.start()
-    print("Watcher started")
-    print(f"Watching: {watch_dir}")
-    print(f"run_date: {run_date}")
-    print("Press Ctrl-C to stop")
+    logger.info(
+            "Watching Dir",
+            watch_dir,
+            run_date,
+        )
+    logger.info(
+            "Press Ctrl-C to stop"
+        )
     
     try:
         while True:
             try:
                 date_str, hour_str = processing_queue.get(timeout=1)  # Wait for new items with a timeout to allow graceful shutdown
-                print(f"[QUEUE] Processing {date_str}/{hour_str}")
+                logger.info(f"[QUEUE] Processing {date_str}/{hour_str}")
                 run_stream(date_str, hour_str)
 
             except Empty:
+                # sleep 0.5 seconds when queue is empty 
                 time.sleep(0.5)
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
-    print("Watcher stopped.")
+    logger.info("File watcher interrupted by user")
 
 
