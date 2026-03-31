@@ -73,7 +73,7 @@ fastfeast-pipeline/
 │
 ├── logging/
 │   ├── __init__.py
-│   ├── pipeline_logger.py           # Structured JSON logger
+│   ├── pipeline_logger.py           # Structured JSON logger (summarize of each process result *if needed*)
 │   ├── alert_handler.py             # Async email alerting (separate thread)
 │   └── logs/
 │       └── YYYY-MM-DD.log
