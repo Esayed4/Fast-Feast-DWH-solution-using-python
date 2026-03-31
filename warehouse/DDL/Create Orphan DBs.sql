@@ -1,0 +1,62 @@
+ 
+
+CREATE TABLE orphan_fact_orders (
+    orphan_id           SERIAL PRIMARY KEY,
+    rejection_reason    TEXT,                -- Detailed error message
+    unmatched_fk_count  INT DEFAULT 0,       -- Number of failed lookups
+    rejected_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Data columns
+    order_id            INT NOT NULL,              -- Removed PRIMARY KEY here
+    order_date_id          int,             
+    customer_id        INT ,
+    restaurant_id    INT ,
+    driver_id           INT  ,
+    region_id           INT,
+    order_time          TIMESTAMP,
+    delivery_time       TIMESTAMP,
+    row_timestamp       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    order_amount        NUMERIC(12, 2),
+    status              VARCHAR(50),
+    delivery_duration_min NUMERIC(8, 2),
+    is_on_time          BOOLEAN,
+    is_customer_sk_orphan BOOLEAN DEFAULT FALSE,
+    is_restaurant_sk_orphan BOOLEAN DEFAULT FALSE,
+    is_driver_sk_orphan BOOLEAN DEFAULT FALSE
+);
+
+
+
+
+CREATE TABLE orphan_fact_tickets (
+    orphan_id           SERIAL PRIMARY KEY,
+    rejection_reason    TEXT,
+    unmatched_fk_count  INT DEFAULT 0,
+    
+    ticket_id               INT ,           
+    order_id                INT,                       -- Reference to fact_orders or source
+    created_date_id         INT,                       -- FK to dim_date (YYYYMMDD)
+    customer_sk             INT REFERENCES dim_customer(customer_sk),
+    restaurant_id           INT REFERENCES dim_restaurant(restaurant_sk),
+    driver_sk               INT REFERENCES dim_driver(driver_sk),
+    region_id               INT,
+    agent_sk                INT REFERENCES dim_agent(agent_sk),
+    reason_id               INT,
+    priority_id             INT,
+    channel_id              INT,
+    ticket_create_time      TIMESTAMP,
+    sla_first_due_at        TIMESTAMP,
+    sla_resolve_due_at      TIMESTAMP,
+    first_response_at       TIMESTAMP,
+    resolved_at             TIMESTAMP,
+    status                  VARCHAR(50),
+    refund_amount           NUMERIC(12, 2),            -- Precision for currency
+    resolved_on_time        BOOLEAN,
+    resolve_from_creating_min NUMERIC(10, 2),
+    resolve_from_response_min NUMERIC(10, 2),
+    delay_of_resolving      NUMERIC(10, 2),
+    is_order_id_orphan BOOLEAN DEFAULT FALSE,
+    is_agent_sk_orphan BOOLEAN DEFAULT FALSE
+);
+
+
