@@ -269,6 +269,11 @@ ORDERS_SCHEMA = {
         "restaurant_id": "restaurants",
         "driver_id":     "drivers",
         "region_id":     "regions",
+    },
+    "orphan_Columns":{
+        "customer_sk":{"dim_customer","customer_sk"},
+        "restaurant_sk":{"dim_restaurant","restaurant_sk"},
+        "driver_sk":{"dim_driver","driver_sk"}
     }
 }
  
@@ -309,6 +314,10 @@ TICKETS_SCHEMA = {
         "reason_id":     "reasons",
         "priority_id":   "priorities",
         "channel_id":    "channels",
+    },
+    "orphan_Columns":{
+        "order_id":{"fact_orders","order_id"},
+        "agent_sk":{"dim_agent","agent_sk"}
     }
 }
  
