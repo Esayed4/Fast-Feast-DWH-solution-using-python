@@ -1,0 +1,187 @@
+---
+config:
+  theme: dark
+---
+erDiagram
+
+    dim_city {
+        int     city_id       PK
+        string  city_name
+        string  country
+        string  timezone
+    }
+
+    dim_region {
+        int     region_id          PK
+        string  region_name
+        int     city_id            FK
+        float   delivery_base_fee
+    }
+
+    dim_segment {
+        int     segment_id        PK
+        string  segment_name
+        float   discount_pct
+        bool    priority_support
+    }
+
+    dim_customer {
+        int     customer_id   PK
+        int     segment_id    FK
+        string  gender
+        date    signup_date
+        date    start_date
+        date    end_date
+        bool    is_current
+    }
+
+    dim_date {
+        int     date_id       PK
+        date    full_date
+        int     year
+        int     quarter
+        int     month
+        string  month_name
+        int     week
+        int     day_of_month
+        string  day_name
+        bool    is_holiday
+    }
+
+    dim_category {
+        int     category_id           PK
+        string  category_name
+    }
+
+    dim_restaurant {
+        int     restaurant_id      PK
+        string  restaurant_name
+        int     category_id        FK
+        string  price_tier
+        float   rating_avg
+        float   prep_time_avg_min
+        bool    is_active
+    }
+
+    dim_driver {
+        int     driver_id      PK
+        string  shift
+        string  vehicle_type
+        date    hire_date
+        float   rating_avg
+        float   on_time_rate
+        float   cancel_rate
+        bool    is_active
+        date    start_date
+        date    end_date
+        bool    is_current
+    }
+
+    dim_team {
+        int     team_id           PK
+        string  team_name
+    }
+
+    dim_agent {
+        int     agent_id             PK
+        int     team_id              FK
+        string  skill_level
+        date    hire_date
+        float   avg_handle_time_min
+        float   resolution_rate
+        float   csat_score
+        bool    is_active
+        date    start_date
+        date    end_date
+        bool    is_current
+    }
+
+    dim_reason_category {
+        int     reason_category       PK
+        string  reason_category_name  
+    }
+
+    dim_reason {
+        int     reason_id             PK
+        string  reason_name
+        int     reason_category_id    FK
+        int     severity_level
+        float   typical_refund_pct
+    }
+
+    dim_priority {
+        int     priority_id            PK
+        string  priority_code
+        string  priority_name
+        int     sla_first_response_min
+        int     sla_resolution_min
+    }
+
+    dim_channel {
+        int     channel_id            PK
+        string  channel_name          
+    }
+
+    fact_orders {
+        int      order_id              PK
+        int      order_date            FK
+        int      customer_id           FK
+        int      restaurant_id         FK
+        int      driver_id             FK
+        int      region_id             FK
+        datetime order_time
+        datetime delivery_time
+        datetime timestamp
+        float    order_amount
+        string   status
+        float    delivery_duration_min
+        bool     is_on_time
+    }
+
+    fact_tickets {
+        int      ticket_id                    PK
+        int      order_id                     FK
+        int      created_id                   FK
+        int      customer_id                  FK
+        int      restaurant_id                FK
+        int      driver_id                    FK
+        int      region_id                    FK
+        int      agent_id                     FK
+        int      reason_id                    FK
+        int      priority_id                  FK
+        int      channel_id                   FK
+        datetime ticket_create_time
+        datetime sla_first_due_at
+        datetime sla_resolve_due_at
+        datetime first_response_at
+        datetime resolved_at
+        string   status
+        float    refund_amount
+        bool     resolved_on_time
+        float    resolve_from_creating_min
+        float    resolve_from_response_min
+        float    delay_of_resolving
+    }
+
+    dim_city            ||--o{ dim_region      : "has"
+    dim_segment         ||--o{ dim_customer    : "classifies"
+    dim_category        ||--o{ dim_restaurant  : "categorized as"
+    dim_team            ||--o{ dim_agent       : "handled by"
+    dim_reason_category ||--o{ dim_reason      : "categorized by"
+
+    dim_date        ||--o{ fact_orders     : "order date"
+    dim_customer    ||--o{ fact_orders     : "placed by"
+    dim_restaurant  ||--o{ fact_orders     : "fulfilled by"
+    dim_driver      ||--o{ fact_orders     : "delivered by"
+    dim_region      ||--o{ fact_orders     : "in region"
+
+    fact_orders     ||--o{ fact_tickets    : "raises"
+    dim_date        ||--o{ fact_tickets    : "created at"
+    dim_customer    ||--o{ fact_tickets    : "raised by"
+    dim_restaurant  ||--o{ fact_tickets    : "about"
+    dim_driver      ||--o{ fact_tickets    : "about"
+    dim_region      ||--o{ fact_tickets    : "in region"
+    dim_agent       ||--o{ fact_tickets    : "handled by"
+    dim_reason      ||--o{ fact_tickets    : "reason"
+    dim_priority    ||--o{ fact_tickets    : "priority"
+    dim_channel     ||--o{ fact_tickets    : "channel"
