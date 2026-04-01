@@ -1,377 +1,176 @@
-import psycopg2
-from psycopg2 import extras
-import connect_to_db
 import os
 import sys
-from psycopg2 import OperationalError
-# ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-# # 2. Import settings (now safe after adding defaults in settings.py)
-# from config import settings,schemas
+import logging
 import pandas as pd
-from datetime import datetime
 import numpy as np
+import psycopg2
+from psycopg2 import extras
+from datetime import datetime
+import connect_to_db
 
+# 1. Path and Logging Setup
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.append(ROOT_DIR)
 
+try:
+    from config import settings
+    from config.logging_config import setup_logging
+    setup_logging()
+    logger = logging.getLogger(__name__)
+except ImportError as e:
+    print(f"Import Error: {e}")
+    sys.exit(1)
 
+# --- Helper Function for Null Handling ---
+def clean_for_psycopg2(df, columns):
+    """Ensures DataFrame only has target columns and converts NaN/NaT to None."""
+    return df[columns].copy().where(pd.notnull(df[columns]), None)
 
+# --- 1. Load Fact Orders ---
+def load_fact_order(input_df=None, db_name='dwh_db', orphan_db='orphan_db'):
+    if input_df is None or input_df.empty:
+        logger.info("No orders provided for processing.")
+        return
 
+    engine_dwh = connect_to_db.get_postgres_conn(db_name)
+    engine_orphan = connect_to_db.get_postgres_conn(orphan_db)
 
-def load_fact_order(input_df=None, db_name='dwh_db',orphan_db='orphan_db'):
-    
+    try:
+        # Load Dimensions
+        dim_cust = pd.read_sql("SELECT customer_id, customer_sk FROM DWH.dim_customer WHERE is_current=True", engine_dwh)
+        dim_rest = pd.read_sql("SELECT restaurant_id AS restaurant_id_dwh FROM DWH.dim_restaurant", engine_dwh)
+        dim_driv = pd.read_sql("SELECT driver_id, driver_sk FROM DWH.dim_driver WHERE is_current=True", engine_dwh)
 
+        # Merge
+        processed_df = input_df.merge(dim_cust, on='customer_id', how='left') \
+                               .merge(dim_rest, left_on='restaurant_id', right_on='restaurant_id_dwh', how='left') \
+                               .merge(dim_driv, on='driver_id', how='left')
+
+        condition = (
+            processed_df['customer_sk'].notna() & 
+            processed_df['restaurant_id_dwh'].notna() & 
+            processed_df['driver_sk'].notna()
+        )
+
+        clean_df = processed_df[condition].copy()
+        orphan_df = processed_df[~condition].copy()
+
+        # Insert Clean Records
+        if not clean_df.empty:
+            target_cols = [
+                'order_id', 'order_date_id', 'customer_sk', 'restaurant_id', 
+                'driver_sk', 'region_id', 'order_time', 'delivery_time', 
+                'row_timestamp', 'order_amount', 'status', 
+                'delivery_duration_min', 'is_on_time'
+            ]
+            df_to_insert = clean_for_psycopg2(clean_df, target_cols)
+            with engine_dwh.cursor() as cur:
+                extras.execute_values(cur, f"INSERT INTO DWH.fact_orders ({','.join(target_cols)}) VALUES %s", 
+                                      [tuple(x) for x in df_to_insert.values.tolist()])
+            engine_dwh.commit()
+            logger.info(f"Loaded {len(clean_df)} orders to DWH.")
+
+        # Insert Orphan Records
+        if not orphan_df.empty:
+            orphan_df['is_customer_sk_orphan'] = orphan_df['customer_sk'].isna()
+            orphan_df['is_restaurant_sk_orphan'] = orphan_df['restaurant_id_dwh'].isna()
+            orphan_df['is_driver_sk_orphan'] = orphan_df['driver_sk'].isna()
+            orphan_df['unmatched_fk_count'] = orphan_df[['is_customer_sk_orphan', 'is_restaurant_sk_orphan', 'is_driver_sk_orphan']].sum(axis=1)
+            orphan_df['rejection_reason'] = orphan_df.apply(lambda r: ", ".join([k for k,v in {'Cust':r.is_customer_sk_orphan,'Rest':r.is_restaurant_sk_orphan,'Driv':r.is_driver_sk_orphan}.items() if v]), axis=1)
+            orphan_df['rejected_at'] = datetime.now()
+
+            orphan_cols = ['rejection_reason','unmatched_fk_count','rejected_at', 'order_id', 'order_date_id', 'customer_id', 'restaurant_id', 'driver_id', 'region_id', 'order_time', 'delivery_time', 'row_timestamp', 'order_amount', 'status', 'delivery_duration_min', 'is_on_time','is_customer_sk_orphan','is_restaurant_sk_orphan','is_driver_sk_orphan']
+            df_orphan_insert = clean_for_psycopg2(orphan_df, orphan_cols)
+            with engine_orphan.cursor() as cur:
+                extras.execute_values(cur, f"INSERT INTO orphan_fact_orders ({','.join(orphan_cols)}) VALUES %s", 
+                                      [tuple(x) for x in df_orphan_insert.values.tolist()])
+            engine_orphan.commit()
+            logger.warning(f"Sent {len(orphan_df)} orphan orders to Orphan DB.")
+
+    finally:
+        engine_dwh.close()
+        engine_orphan.close()
+
+# --- 2. Load Fact Tickets ---
+def load_fact_ticket(input_df=None, db_name='dwh_db', orphan_db='orphan_db'):
+    if input_df is None or input_df.empty:
+        return
 
     engine_dwh = connect_to_db.get_postgres_conn(db_name)
     engine_orphan = connect_to_db.get_postgres_conn(orphan_db)
 
-    # 1. Load Dimensions (including the Surrogate Keys) is active
-    dim_cust = pd.read_sql("SELECT customer_id, customer_sk FROM DWH.dim_customer where is_current=True ", engine_dwh)
-    dim_rest = pd.read_sql("""SELECT restaurant_id as restaurant_id_x FROM DWH.dim_restaurant""", engine_dwh)
-    dim_driv = pd.read_sql("SELECT driver_id, driver_sk FROM DWH.dim_driver where is_current=True", engine_dwh)
+    try:
+        dim_fact = pd.read_sql("SELECT order_id AS orderid_exists FROM DWH.fact_orders", engine_dwh)
+        dim_agent = pd.read_sql("SELECT agent_id, agent_sk FROM DWH.dim_agent WHERE is_current=True", engine_dwh)
 
+        processed_df = input_df.merge(dim_fact, left_on='order_id', right_on='orderid_exists', how='left') \
+                               .merge(dim_agent, on='agent_id', how='left')
 
-     # 2. Left Merge to identify matches and pull SKs
-# We use left merge first so we can easily separate clean vs orphan records
-    processed_df = input_df.merge(dim_cust, on='customer_id', how='left') \
-                        .merge(dim_rest, left_on='restaurant_id',right_on='restaurant_id_x', how='left') \
-                        .merge(dim_driv, on='driver_id', how='left')
-# # 3. Separate Clean and Orphan records
-# # Clean records must have all SKs present (not null)
-    condition = (
-        processed_df['customer_sk'].notna() & 
-        processed_df['restaurant_id_x'].notna() & 
-        processed_df['driver_sk'].notna()
-    )
+        condition = processed_df['orderid_exists'].notna() & processed_df['agent_sk'].notna()
+        clean_df = processed_df[condition].copy()
+        orphan_df = processed_df[~condition].copy()
 
-    clean_df = processed_df[condition].copy()
-    orphan_df = processed_df[~condition].copy()
-  
-    # --- 4. Process Clean Records ---
-    if not clean_df.empty:
-        # Drop any columns that aren't in the DWH table (like the original business keys if not needed)
-        # Assuming the DWH table structure matches clean_df columns exactly
-        target_columns = [
-             'order_id', 'order_date_id', 'customer_sk', 'restaurant_id', 
-             'driver_sk', 'region_id', 'order_time', 'delivery_time', 
-            'row_timestamp', 'order_amount', 'status', 
-            'delivery_duration_min', 'is_on_time'
-        ]   
+        if not clean_df.empty:
+            target_cols = ["ticket_id", "order_id", "created_date_id", "customer_id", "restaurant_id", "driver_id", "region_id", "agent_sk", "reason_id", "priority_id", "channel_id", "ticket_create_time", "sla_first_due_at", "sla_resolve_due_at", "first_response_at", "resolved_at", "status", "refund_amount", "resolved_on_time", "resolve_from_creating_min", "resolve_from_response_min", "delay_of_resolving"]
+            df_to_insert = clean_for_psycopg2(clean_df, target_cols)
+            with engine_dwh.cursor() as cur:
+                extras.execute_values(cur, f"INSERT INTO DWH.fact_tickets ({','.join(target_cols)}) VALUES %s", 
+                                      [tuple(x) for x in df_to_insert.values.tolist()])
+            engine_dwh.commit()
 
-# Create a filtered version of the dataframe
-        df_to_insert = clean_df[target_columns].copy()
+        if not orphan_df.empty:
+            orphan_df['is_order_id_orphan'] = orphan_df['orderid_exists'].isna()
+            orphan_df['is_agent_sk_orphan'] = orphan_df['agent_sk'].isna()
+            orphan_df['unmatched_fk_count'] = orphan_df[['is_order_id_orphan', 'is_agent_sk_orphan']].sum(axis=1)
+            orphan_df['rejection_reason'] = orphan_df.apply(lambda r: "Missing Order" if r.is_order_id_orphan else "Missing Agent", axis=1)
+            
+            orphan_cols = ['unmatched_fk_count', 'rejection_reason', "ticket_id", "order_id", "created_date_id", "customer_id", "restaurant_id", "driver_id", "region_id", "agent_id", "reason_id", "priority_id", "channel_id", "ticket_create_time", "sla_first_due_at", "sla_resolve_due_at", "first_response_at", "resolved_at", "status", "refund_amount", "resolved_on_time", "resolve_from_creating_min", "resolve_from_response_min", "delay_of_resolving", "is_order_id_orphan", "is_agent_sk_orphan"]
+            df_to_orphan = clean_for_psycopg2(orphan_df, orphan_cols)
+            with engine_orphan.cursor() as cur:
+                extras.execute_values(cur, f"INSERT INTO orphan_fact_tickets ({','.join(orphan_cols)}) VALUES %s", 
+                                      [tuple(x) for x in df_to_orphan.values.tolist()])
+            engine_orphan.commit()
 
-        with engine_dwh.cursor() as cur:
-            records = [tuple(x) for x in df_to_insert.to_numpy()]
-            columns_str = ', '.join(target_columns)  # explicitly specify columns
-            sql = f"""
-                INSERT INTO DWH.fact_orders ({columns_str})
-                VALUES %s
-            """
-            psycopg2.extras.execute_values(cur, sql, records)
-        engine_dwh.commit()
-###################### load data here
+    finally:
+        engine_dwh.close()
+        engine_orphan.close()
 
-#     # --- 5. Process Orphan Records ---
-    if not orphan_df.empty:
-        # Generate metadata for debugging
-        orphan_df['is_customer_sk_orphan'] = orphan_df['customer_sk'].isna()
-        orphan_df['is_restaurant_sk_orphan'] = orphan_df['restaurant_id_x'].isna()
-        orphan_df['is_driver_sk_orphan'] = orphan_df['driver_sk'].isna()
-        
-        # Calculate how many FKs failed
-        orphan_df['unmatched_fk_count'] = (
-            orphan_df[['is_customer_sk_orphan', 'is_restaurant_sk_orphan', 'is_driver_sk_orphan']]
-            .sum(axis=1)
-        )
-        
-
-
-#-------------------------------------------------------------
-    def get_reason(row):
-        reasons = []
-        # Using .get(column, default) prevents KeyError
-        if row.get('is_customer_sk_orphan'): reasons.append("Missing Customer SK")
-        if row.get('is_restaurant_sk_orphan'): reasons.append("Missing Restaurant SK")
-        if row.get('is_driver_sk_orphan'): reasons.append("Missing Driver SK")
-        return ", ".join(reasons)
-
-# Apply the logic
-    orphan_df['rejection_reason'] = orphan_df.apply(get_reason, axis=1)
-    orphan_df['rejected_at'] = datetime.now()
-    target_columns = [
-            'rejection_reason','unmatched_fk_count','rejected_at', 'order_id', 'order_date_id', 'customer_id', 'restaurant_id', 
-            'driver_id', 'region_id', 'order_time', 'delivery_time', 
-            'row_timestamp', 'order_amount', 'status', 
-            'delivery_duration_min', 'is_on_time','is_customer_sk_orphan',
-            'is_restaurant_sk_orphan','is_driver_sk_orphan',
-        ]   
-    
-
-    df_orphan_insert=orphan_df[target_columns].copy()
-    with engine_orphan.cursor() as cur:
-            records = [tuple(x) for x in df_orphan_insert.to_numpy()]
-            columns_str = ', '.join(target_columns)  # explicitly specify columns
-            sql = f"""
-                INSERT INTO orphan_fact_orders ({columns_str})
-                VALUES %s
-            """
-            psycopg2.extras.execute_values(cur, sql, records)
-    engine_orphan.commit()
-        # Load to Orphan Table
-    # orphan_df.to_sql(orphan_table_name, engine_orphan, if_exists='append', index=False)
-    # print(f"Loaded {len(orphan_df)} orphan records to {orphan_table_name}.")
- ###################### load data here
-
-
-
-
-
-
-
-
-
-#----------------------------------------------------
-
-
-def load_fact_ticket(input_df=None, db_name='dwh_db',orphan_db='orphan_db'):
-    
-
-
-    engine_dwh = connect_to_db.get_postgres_conn(db_name)
-    engine_orphan = connect_to_db.get_postgres_conn(orphan_db)
-     
-
-    # 1. Load Dimensions (including the Surrogate Keys)
-    dim_fact = pd.read_sql("""SELECT order_id as orderid_x   FROM DWH.fact_orders""", engine_dwh)
-    dim_agent = pd.read_sql("SELECT agent_id,agent_sk FROM DWH.dim_agent where is_current=True", engine_dwh)
-    dim_cust = pd.read_sql("SELECT customer_id, customer_sk FROM DWH.dim_customer where is_current=True", engine_dwh)
-    dim_driv = pd.read_sql("SELECT driver_id, driver_sk FROM DWH.dim_driver where is_current=True", engine_dwh)
-
-    print(dim_fact.columns)
-
-
-     # 2. Left Merge to identify matches and pull SKs
-# We use left merge first so we can easily separate clean vs orphan records
-    processed_df = input_df.merge(dim_fact, left_on='order_id', right_on='orderid_x', how='left') \
-                        .merge(dim_agent, on='agent_id', how='left') \
-                        .merge(dim_cust, on='customer_id', how='left') \
-                         .merge(dim_driv, on='driver_id', how='left')
- # # 3. Separate Clean and Orphan records
-# # Clean records must have all SKs present (not null)
-    print(processed_df.columns)
-    condition = (
-        processed_df['orderid_x'].notna() & 
-        processed_df['agent_sk'].notna() 
-     )
-
-    clean_df = processed_df[condition].copy()
-    orphan_df = processed_df[~condition].copy()
-
-    print(clean_df.size)
-    print(orphan_df.size)
-    
-    if not clean_df.empty:
-        target_columns = [
-            "ticket_id", "order_id", "created_date_id", "customer_sk",
-            "restaurant_id", "driver_sk", "region_id", "agent_sk",
-            "reason_id", "priority_id", "channel_id", "ticket_create_time",
-            "sla_first_due_at", "sla_resolve_due_at", "first_response_at",
-            "resolved_at", "status", "refund_amount", "resolved_on_time",
-            "resolve_from_creating_min", "resolve_from_response_min", "delay_of_resolving"
-        ]
-        
-        # FIRST: Create the variable
-        df_to_insert = clean_df[target_columns].copy()
-
-        # SECOND: Now you can access and modify it
-        # Use 'where' with 'pd.notnull' as it's more robust for mixed types than .replace()
-        df_to_insert = df_to_insert.where(pd.notnull(df_to_insert), None)
-
-        with engine_dwh.cursor() as cur:
-            # THIRD: Convert to list of tuples using .values.tolist()
-            # This keeps the 'None' values as pure Python Nones for psycopg2
-            records = [tuple(x) for x in df_to_insert.values.tolist()]
-            columns_str = ', '.join(target_columns)
-
-            sql = f"""
-                INSERT INTO DWH.fact_tickets ({columns_str})
-                VALUES %s
-            """
-            psycopg2.extras.execute_values(cur, sql, records)
-
-        engine_dwh.commit()
-
-#     # --- 5. Process Orphan Records ---
-    if not orphan_df.empty:
-        # Generate metadata for debugging
-        orphan_df['is_order_id_orphan'] = orphan_df['order_id_x'].isna()
-        orphan_df['is_agent_sk_orphan'] = orphan_df['agent_id'].isna()
-        
-        # Calculate how many FKs failed
-        orphan_df['unmatched_fk_count'] = (
-            orphan_df[['is_order_id_orphan', 'is_agent_sk_orphan' ]]
-            .sum(axis=1)
-        )
-        
-#         # Create a descriptive rejection reason
-        def get_reason(row):
-            reasons = []
-            # Using .get(column, default) prevents KeyError
-            if row.get('is_order_id_orphan'): reasons.append("Missing order id")
-            if row.get('is_agent_sk_orphan'): reasons.append("Missing agent SK")
-            return ", ".join(reasons)
-
-    # Apply the logic
-        orphan_df['rejection_reason'] = orphan_df.apply(get_reason, axis=1)
-        orphan_df['rejected_at'] = datetime.now()
-        target_columns = [
-            'unmatched_fk_count',
-            'rejection_reason',
-            "ticket_id",
-            "order_id",
-            "created_date_id",
-            "customer_id",
-            "restaurant_id",
-            "driver_id",
-            "region_id",
-            "agent_id",
-            "reason_id",
-            "priority_id",
-            "channel_id",
-            "ticket_create_time",
-            "sla_first_due_at",
-            "sla_resolve_due_at",
-            "first_response_at",
-            "resolved_at",
-            "status",
-            "refund_amount",
-            "resolved_on_time",
-            "resolve_from_creating_min",
-            "resolve_from_response_min",
-            "delay_of_resolving",
-            "is_order_id_orphan",
-            "is_agent_sk_orphan"
-        ]
-        df_to_insert = orphan_df[target_columns].copy()
-        
-        with engine_orphan.cursor() as cur:
-            records = [tuple(x) for x in df_to_insert.to_numpy()]
-            columns_str = ', '.join(target_columns)
-
-            sql = f"""
-                INSERT INTO orphan_fact_tickets ({columns_str})
-                VALUES %s
-            """
-            psycopg2.extras.execute_values(cur, sql, records)
-
-        engine_orphan.commit()
-
-
-
-# #-------------------------------------------------
-
-# #
-# def solve_orphan_ticket_order_id(fact_order_df, orphan_db='orphan_db'):
-#     conn = connect_to_db.get_postgres_conn(orphan_db)
-    
-#     # Load orphan tickets
-#     orphan_ticket = pd.read_sql("SELECT * FROM orphan_fact_tickets", conn)
-    
-#     # Find tickets that exist in fact_order_df
-#     processed_df = orphan_ticket.merge(fact_order_df, on='order_id', how='inner')
-    
-#     if not processed_df.empty:
-#         order_ids = processed_df['order_id'].tolist()  # list, not tuple
-
-#         # Use parameterized query with ANY() — safe even for large lists
-#         with conn.cursor() as cur:
-#             cur.execute(
-#                 "UPDATE orphan_fact_tickets SET is_order_id_orphan = FALSE WHERE order_id = ANY(%s)",
-#                 (order_ids,)  # pass as a tuple containing the list
-#             )
-#         conn.commit()
-
-        
+# --- 3. Load Ticket Events (SLA Update Logic) ---
 def load_ticket_event(input_df, db_name='dwh_db'):
     engine_dwh = connect_to_db.get_postgres_conn(db_name)
-    fact_tickets=pd.read_sql("SELECT order_id FROM fact_tickets", engine_dwh)
-    # convert to datetime
-    input_df['event_ts'] = pd.to_datetime(input_df['event_ts'])
+    try:
+        input_df['event_ts'] = pd.to_datetime(input_df['event_ts'])
+        ticket_ids = input_df['ticket_id'].unique()
 
-    # get unique tickets
-    ticket_ids = input_df['ticket_id'].unique()
-
-    with engine_dwh.begin() as conn:
-        for ticket_id in ticket_ids:
-
-            df = input_df[input_df['ticket_id'] == ticket_id]
-            df = df.sort_values('event_ts')
-
-            # initialize values
-            ticket_create_time = None
-            first_response_at = None
-            resolved_at = None
-            closed_at=None
-            status = None
-
-            # loop over events
-            for _, row in df.iterrows():
-
-                if row['new_status'] == 'Open' and ticket_create_time is None:
-                    ticket_create_time = row['event_ts']
-
-                elif row['new_status'] == 'InProgress' and first_response_at is None:
-                    first_response_at = row['event_ts']
+        with engine_dwh.cursor() as cur:
+            for t_id in ticket_ids:
+                df = input_df[input_df['ticket_id'] == t_id].sort_values('event_ts')
                 
-                elif row['new_status'] == 'Resolved':
-                    resolved_at = row['event_ts']
+                # Logic to extract timestamps from statuses
+                times = {s: df[df['new_status'] == s]['event_ts'].min() for s in ['Open', 'InProgress', 'Resolved', 'Closed']}
+                latest_status = df.iloc[-1]['new_status']
 
-                elif row['new_status'] == 'Closed':
-                    closed_at = row['event_ts']
+                # Calculations
+                creating_min = (times['Resolved'] - times['Open']).total_seconds() / 60 if times['Resolved'] and times['Open'] else None
+                response_min = (times['Resolved'] - times['InProgress']).total_seconds() / 60 if times['Resolved'] and times['InProgress'] else None
+                on_time = creating_min <= 60 if creating_min else None
 
-                
+                cur.execute("""
+                    UPDATE DWH.fact_tickets SET ticket_create_time=%s, first_response_at=%s, resolved_at=%s, 
+                    status=%s, resolve_from_creating_min=%s, resolve_from_response_min=%s, resolved_on_time=%s
+                    WHERE ticket_id=%s
+                """, (times['Open'], times['InProgress'], times['Resolved'], latest_status, creating_min, response_min, on_time, t_id))
+        engine_dwh.commit()
+    finally:
+        engine_dwh.close()
 
-                # always update latest status
-                status = row['new_status']
-
-            # simple SLA calc
-            resolve_from_creating_min = None
-            resolve_from_response_min = None
-
-            if ticket_create_time and resolved_at:
-                resolve_from_creating_min = (resolved_at - ticket_create_time).total_seconds() / 60
-
-            if first_response_at and resolved_at:
-                resolve_from_response_min = (resolved_at - first_response_at).total_seconds() / 60
-
-            resolved_on_time = None
-            if resolve_from_creating_min:
-                resolved_on_time = resolve_from_creating_min <= 60
-
-            # update DB
-            conn.execute("""
-                UPDATE fact_tickets
-                SET 
-                    ticket_create_time = %s,
-                    first_response_at = %s,
-                    resolved_at = %s,
-                    status = %s,
-                    resolve_from_creating_min = %s,
-                    resolve_from_response_min = %s,
-                    resolved_on_time = %s
-                WHERE ticket_id = %s
-            """, (
-                ticket_create_time,
-                first_response_at,
-                resolved_at,
-                status,
-                resolve_from_creating_min,
-                resolve_from_response_min,
-                resolved_on_time,
-                ticket_id
-            ))
-
-    
-
+if __name__ == "__main__":
+    try:
+        df = pd.read_json('orders.json')
+        load_fact_order(df)
+    except Exception as e:
+        logger.error(f"Critical error in main: {e}")
 
  
 df=pd.read_json('orders.json')
