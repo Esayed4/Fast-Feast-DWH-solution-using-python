@@ -26,7 +26,8 @@ erDiagram
     }
 
     dim_customer {
-        int     customer_id   PK
+        int     customer_key  PK
+        int     customer_id   
         int     segment_id    FK
         string  gender
         date    signup_date
@@ -64,7 +65,8 @@ erDiagram
     }
 
     dim_driver {
-        int     driver_id      PK
+        int     driver_key     PK
+        int     driver_id      
         string  shift
         string  vehicle_type
         date    hire_date
@@ -83,7 +85,8 @@ erDiagram
     }
 
     dim_agent {
-        int     agent_id             PK
+        int     agent_key            PK
+        int     agent_id             
         int     team_id              FK
         string  skill_level
         date    hire_date
