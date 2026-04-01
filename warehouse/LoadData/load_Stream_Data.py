@@ -84,7 +84,9 @@ def load_fact_order(input_df=None, db_name='dwh_db',orphan_db='orphan_db'):
             .sum(axis=1)
         )
         
-#         # Create a descriptive rejection reason
+
+
+#-------------------------------------------------------------
     def get_reason(row):
         reasons = []
         # Using .get(column, default) prevents KeyError
@@ -98,7 +100,7 @@ def load_fact_order(input_df=None, db_name='dwh_db',orphan_db='orphan_db'):
     orphan_df['rejected_at'] = datetime.now()
     target_columns = [
             'rejection_reason','unmatched_fk_count','rejected_at', 'order_id', 'order_date_id', 'customer_id', 'restaurant_id', 
-             'driver_id', 'region_id', 'order_time', 'delivery_time', 
+            'driver_id', 'region_id', 'order_time', 'delivery_time', 
             'row_timestamp', 'order_amount', 'status', 
             'delivery_duration_min', 'is_on_time','is_customer_sk_orphan',
             'is_restaurant_sk_orphan','is_driver_sk_orphan',
@@ -128,7 +130,7 @@ def load_fact_order(input_df=None, db_name='dwh_db',orphan_db='orphan_db'):
 
 
 
-
+#----------------------------------------------------
 
 
 def load_fact_ticket(input_df=None, db_name='dwh_db',orphan_db='orphan_db'):
@@ -203,8 +205,6 @@ def load_fact_ticket(input_df=None, db_name='dwh_db',orphan_db='orphan_db'):
 
         engine_dwh.commit()
 
-###################### load data here
-
 #     # --- 5. Process Orphan Records ---
     if not orphan_df.empty:
         # Generate metadata for debugging
@@ -234,9 +234,9 @@ def load_fact_ticket(input_df=None, db_name='dwh_db',orphan_db='orphan_db'):
             "ticket_id",
             "order_id",
             "created_date_id",
-            "customer_sk",
+            "customer_id",
             "restaurant_id",
-            "driver_sk",
+            "driver_id",
             "region_id",
             "agent_id",
             "reason_id",
@@ -269,15 +269,12 @@ def load_fact_ticket(input_df=None, db_name='dwh_db',orphan_db='orphan_db'):
             psycopg2.extras.execute_values(cur, sql, records)
 
         engine_dwh.commit()
-        # Load to Orphan Table
-    # orphan_df.to_sql(orphan_table_name, engine_orphan, if_exists='append', index=False)
-    # print(f"Loaded {len(orphan_df)} orphan records to {orphan_table_name}.")
- ###################### load data here
 
 
 
+#-------------------------------------------------
 
-
+#
 def solve_orphan_ticket_order_id(fact_order_df, orphan_db='orphan_db'):
     conn = connect_to_db.get_postgres_conn(orphan_db)
     
@@ -297,6 +294,88 @@ def solve_orphan_ticket_order_id(fact_order_df, orphan_db='orphan_db'):
                 (order_ids,)  # pass as a tuple containing the list
             )
         conn.commit()
+def load_ticket_event(input_df, db_name='dwh_db'):
+    engine_dwh = connect_to_db.get_postgres_conn(db_name)
+    fact_tickets=pd.read_sql("SELECT order_id FROM fact_tickets", engine_dwh)
+    # convert to datetime
+    input_df['event_ts'] = pd.to_datetime(input_df['event_ts'])
+
+    # get unique tickets
+    ticket_ids = input_df['ticket_id'].unique()
+
+    with engine_dwh.begin() as conn:
+        for ticket_id in ticket_ids:
+
+            df = input_df[input_df['ticket_id'] == ticket_id]
+            df = df.sort_values('event_ts')
+
+            # initialize values
+            ticket_create_time = None
+            first_response_at = None
+            resolved_at = None
+            closed_at=None
+            status = None
+
+            # loop over events
+            for _, row in df.iterrows():
+
+                if row['new_status'] == 'Open' and ticket_create_time is None:
+                    ticket_create_time = row['event_ts']
+
+                elif row['new_status'] == 'InProgress' and first_response_at is None:
+                    first_response_at = row['event_ts']
+                
+                elif row['new_status'] == 'Resolved':
+                    resolved_at = row['event_ts']
+
+                elif row['new_status'] == 'Closed':
+                    closed_at = row['event_ts']
+
+                
+
+                # always update latest status
+                status = row['new_status']
+
+            # simple SLA calc
+            resolve_from_creating_min = None
+            resolve_from_response_min = None
+
+            if ticket_create_time and resolved_at:
+                resolve_from_creating_min = (resolved_at - ticket_create_time).total_seconds() / 60
+
+            if first_response_at and resolved_at:
+                resolve_from_response_min = (resolved_at - first_response_at).total_seconds() / 60
+
+            resolved_on_time = None
+            if resolve_from_creating_min:
+                resolved_on_time = resolve_from_creating_min <= 60
+
+            # update DB
+            conn.execute("""
+                UPDATE fact_tickets
+                SET 
+                    ticket_create_time = %s,
+                    first_response_at = %s,
+                    resolved_at = %s,
+                    status = %s,
+                    resolve_from_creating_min = %s,
+                    resolve_from_response_min = %s,
+                    resolved_on_time = %s
+                WHERE ticket_id = %s
+            """, (
+                ticket_create_time,
+                first_response_at,
+                resolved_at,
+                status,
+                resolve_from_creating_min,
+                resolve_from_response_min,
+                resolved_on_time,
+                ticket_id
+            ))
+
+    
+
+
  
 df=pd.read_json('orders.json')
 load_fact_order(df)
