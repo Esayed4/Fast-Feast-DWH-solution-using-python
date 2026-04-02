@@ -52,9 +52,10 @@ def handle_order_orphan(db_name='dwh_db', orphan_db='orphan_db'):
         # Select target columns and fix Pandas null types (NaT/NaN)
         fact_orphan = fact_orphan[target_columns].copy()
         fact_orphan = fact_orphan.where(pd.notnull(fact_orphan), None)
-
+         
         logger.info(f"Retrieved {len(fact_orphan)} orphan orders. Re-submitting to DWH...")
         
+        return fact_orphan
         # UNCOMMENT after importing your load function:
         # from warehouse.LoadData.load_Stream_Data import load_fact_order
         # load_fact_order(fact_orphan)
@@ -101,6 +102,7 @@ def handle_ticket_orphan(db_name='dwh_db', orphan_db='orphan_db'):
         # from warehouse.LoadData.load_Stream_Data import load_fact_ticket
         # load_fact_ticket(fact_orphan)
 
+        return fact_orphan;
     except Exception as e:
         logger.error(f"Error handling ticket orphans: {e}")
         engine_orphan.rollback()
