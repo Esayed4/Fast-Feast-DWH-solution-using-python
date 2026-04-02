@@ -85,22 +85,22 @@ def transform_tickets_to_fact(input_df):
         logger.error(f"Ticket transformation failed: {e}")
         raise
 
-# --- Test with your provided data ---
-if __name__ == "__main__":
-    raw_tickets = [
-        {
-            "ticket_id": "3c178a5e-7207-43ed-b51a-c4ca6fdd354b",
-            "order_id": "3bb9d7df-1b6f-4e91-aa62-c338800a3540",
-            "customer_id": 299, "driver_id": 87, "restaurant_id": 8, "agent_id": 1,
-            "reason_id": 3, "priority_id": 3, "channel_id": 4, "status": "Closed",
-            "refund_amount": 0.0, "created_at": "2026-02-20 15:32:05",
-            "first_response_at": "2026-02-20 15:32:55", "resolved_at": "2026-02-20 16:06:05",
-            "sla_first_due_at": "2026-02-20 15:33:05", "sla_resolve_due_at": "2026-02-20 15:47:05"
-        }
-    ]
+# # --- Test with your provided data ---
+# if __name__ == "__main__":
+#     raw_tickets = [
+#         {
+#             "ticket_id": "3c178a5e-7207-43ed-b51a-c4ca6fdd354b",
+#             "order_id": "3bb9d7df-1b6f-4e91-aa62-c338800a3540",
+#             "customer_id": 299, "driver_id": 87, "restaurant_id": 8, "agent_id": 1,
+#             "reason_id": 3, "priority_id": 3, "channel_id": 4, "status": "Closed",
+#             "refund_amount": 0.0, "created_at": "2026-02-20 15:32:05",
+#             "first_response_at": "2026-02-20 15:32:55", "resolved_at": "2026-02-20 16:06:05",
+#             "sla_first_due_at": "2026-02-20 15:33:05", "sla_resolve_due_at": "2026-02-20 15:47:05"
+#         }
+#     ]
     
-    df_in = pd.DataFrame(raw_tickets)
-    df_out = transform_tickets_to_fact(df_in)
+#     df_in = pd.DataFrame(raw_tickets)
+#     df_out = transform_tickets_to_fact(df_in)
     
-    logger.info("Sample Output JSON:")
-    logger.info(df_out.to_json(orient="records", indent=2))
+#     logger.info("Sample Output JSON:")
+#     logger.info(df_out.to_json(orient="records", indent=2))

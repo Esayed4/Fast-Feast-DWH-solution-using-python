@@ -71,35 +71,35 @@ def transform_to_string_fact(input_df):
 
 # --- Test Execution ---
 
-raw_data = {
-    "order_id": ["101", "102"],
-    "customer_id": [1, 2],
-    "restaurant_id": [55, 60],
-    "driver_id": [10, 11],
-    "region_id": [1, 2],
-    "total_amount": [25.50, 42.00],
-    "order_status": ["Delivered", "Delivered"],
-    "order_created_at": ["2026-03-31 10:00:00", "2026-03-31 11:00:00"],
-    "delivered_at": ["2026-03-31 10:30:00", "2026-03-31 12:15:00"] 
-}
+# raw_data = {
+#     "order_id": ["101", "102"],
+#     "customer_id": [1, 2],
+#     "restaurant_id": [55, 60],
+#     "driver_id": [10, 11],
+#     "region_id": [1, 2],
+#     "total_amount": [25.50, 42.00],
+#     "order_status": ["Delivered", "Delivered"],
+#     "order_created_at": ["2026-03-31 10:00:00", "2026-03-31 11:00:00"],
+#     "delivered_at": ["2026-03-31 10:30:00", "2026-03-31 12:15:00"] 
+# }
 
-logger.info("Initializing Test Data...")
-df_test_input = pd.DataFrame(raw_data)
+# logger.info("Initializing Test Data...")
+# df_test_input = pd.DataFrame(raw_data)
 
-# Run transformation
-df_fact_output = transform_to_string_fact(df_test_input)
+# # Run transformation
+# df_fact_output = transform_to_string_fact(df_test_input)
 
-# Verify results via Logger
-logger.info("--- Data Sample (JSON Format) ---")
-logger.info(df_fact_output.to_json(orient="records", indent=2))
+# # Verify results via Logger
+# logger.info("--- Data Sample (JSON Format) ---")
+# logger.info(df_fact_output.to_json(orient="records", indent=2))
 
-# Type Verification
-first_row = df_fact_output.iloc[0]
-logger.info(f"VERIFICATION: order_time is {type(first_row['order_time'])}")
-logger.info(f"VERIFICATION: row_timestamp is {type(first_row['row_timestamp'])}")
-logger.info(f"VERIFICATION: is_on_time is {type(first_row['is_on_time'])}")
+# # Type Verification
+# first_row = df_fact_output.iloc[0]
+# logger.info(f"VERIFICATION: order_time is {type(first_row['order_time'])}")
+# logger.info(f"VERIFICATION: row_timestamp is {type(first_row['row_timestamp'])}")
+# logger.info(f"VERIFICATION: is_on_time is {type(first_row['is_on_time'])}")
 
-if isinstance(first_row['order_time'], str):
-    logger.info("Type Check Passed: Date fields are strings.")
-else:
-    logger.warning("Type Check Failed: Date fields are NOT strings.")
+# if isinstance(first_row['order_time'], str):
+#     logger.info("Type Check Passed: Date fields are strings.")
+# else:
+#     logger.warning("Type Check Failed: Date fields are NOT strings.")
