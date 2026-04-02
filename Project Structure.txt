@@ -22,7 +22,6 @@ fastfeast-pipeline/
 │   ├── shared_scripts/              # Shared logic used by both batch and stream
 │   │   ├── __init__.py
 │   │   ├── extractor.py                # Reads CSV/JSON into DataFrames (batch + stream)
-│   │   ├── flatten_dims.py          # Flattens nested JSON fields into flat dim columns (batch + stream)
 │   │   │
 │   │   ├── validator/               # Validation stages — one file per check
 │   │   │   ├── __init__.py
@@ -59,7 +58,9 @@ fastfeast-pipeline/
 ├── warehouse/
 │   ├── __init__.py
 │   ├── connection.py                # DB connection manager
-│   └── schema.sql                   # CREATE TABLE statements (dim + fact)
+│   ├── schema.sql                   # CREATE TABLE statements (dim + fact)
+│   ├── DWH Galaxy Schema.png
+│   └── DWH-design.mmd
 │
 ├── quarantine/                      # Bad data storage — files and records that failed validation
 │   ├── bad_files/                   # Entire files that failed file-level validation
