@@ -1,6 +1,12 @@
 import argparse
 import sys
 from pipeline.file_watcher.watcher import watcher
+from config.logging_config import setup_logging         
+from pipeline.file_watcher.watcher import watcher
+import logging
+
+setup_logging()
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Entry point
@@ -10,7 +16,7 @@ def _cmd_watch(args):
 
     run_date = args.date
     if run_date:
-        print(f"Starting watcher for date: {run_date}")
+        logger.info(f"Starting watcher for date: {run_date}")
     else:        
         None
     watcher(run_date = run_date)
