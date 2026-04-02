@@ -59,9 +59,3 @@ RATING_MAX         = float(os.getenv("RATING_MAX", "5.0"))
 AMOUNT_MIN         = float(os.getenv("AMOUNT_MIN", "0.0"))
 ON_TIME_RATE_MIN   = float(os.getenv("ON_TIME_RATE_MIN", "0.0"))
 ON_TIME_RATE_MAX   = float(os.getenv("ON_TIME_RATE_MAX", "1.0"))
-
-# UUID_REGEX = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-# EGYPTIAN_ID_REGEX = r"^\d{14}$"
-# TITLE_CASE_REGEX = r"^[A-Z][a-z]+(?: [A-Z][a-z]*)*$"
-# ALPHANUMERIC_SPACE_REGEX = r"^[A-Za-z0-9 ]+$"
-PROCESSED_DATA_DIR = Path(os.getenv("PROCESSED_DATA_DIR", "data/processed"))
