@@ -1,5 +1,7 @@
- 
-CREATE TABLE orphan_fact_orders (
+CREATE DATABASE orphan_db;
+CREATE SCHEMA orphan;
+
+CREATE TABLE orphan.orphan_fact_orders (
     orphan_id           SERIAL PRIMARY KEY,
     rejection_reason    TEXT,                -- Detailed error message
     unmatched_fk_count  INT DEFAULT 0,       -- Number of failed lookups
@@ -26,7 +28,7 @@ CREATE TABLE orphan_fact_orders (
 
 
   
-CREATE TABLE orphan_fact_tickets (
+CREATE TABLE orphan.orphan_fact_tickets (
     orphan_id           SERIAL PRIMARY KEY,
     rejection_reason    TEXT,
     unmatched_fk_count  INT DEFAULT 0,
@@ -56,5 +58,3 @@ CREATE TABLE orphan_fact_tickets (
     is_order_id_orphan BOOLEAN DEFAULT FALSE,
     is_agent_sk_orphan BOOLEAN DEFAULT FALSE
 );
-
-
