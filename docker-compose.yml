@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_dwh
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: fastfest_db
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - ./data/postgreDB:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - dwh_network
+
+networks:
+  dwh_network:
+    driver: bridge

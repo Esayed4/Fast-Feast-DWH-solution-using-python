@@ -19,7 +19,11 @@ MASTER_DIR = Path(os.getenv("MASTER_DIR", "data/master"))
 # =============================================================================
 
 # DATABASE PATHS
-
+POSTGRES_USER= 'admin'
+POSTGRES_PASSWORD= 'admin'
+PII_DB='pii_db'
+ORPHAN_DB='orphan_db'
+DWH='dwh_db'
 DWH_PATH = Path(os.getenv("DWH_PATH", "data/warehouse.db"))
 PII_DB_PATH = Path(os.getenv("PII_DB_PATH", "data/pii_db.db"))
 ORPHAN_DB_PATH = Path(os.getenv("ORPHAN_DB_PATH", "data/orphan_db.db"))
