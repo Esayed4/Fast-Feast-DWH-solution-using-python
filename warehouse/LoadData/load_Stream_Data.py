@@ -103,16 +103,21 @@ def load_fact_ticket(input_df=None, db_name='dwh_db', orphan_db='orphan_db'):
     try:
         dim_fact = pd.read_sql("SELECT order_id AS orderid_exists FROM DWH.fact_orders", engine_dwh)
         dim_agent = pd.read_sql("SELECT agent_id, agent_sk FROM DWH.dim_agent WHERE is_current=True", engine_dwh)
+        dim_cust = pd.read_sql("SELECT customer_id, customer_sk FROM DWH.dim_customer WHERE is_current=True", engine_dwh)
+        dim_driv = pd.read_sql("SELECT driver_id, driver_sk FROM DWH.dim_driver WHERE is_current=True", engine_dwh)
+
 
         processed_df = input_df.merge(dim_fact, left_on='order_id', right_on='orderid_exists', how='left') \
-                               .merge(dim_agent, on='agent_id', how='left')
+                               .merge(dim_agent, on='agent_id', how='left') \
+                               .merge(dim_cust, on='customer_id', how='left') \
+                               .merge(dim_driv, on='driver_id', how='left')
 
         condition = processed_df['orderid_exists'].notna() & processed_df['agent_sk'].notna()
         clean_df = processed_df[condition].copy()
         orphan_df = processed_df[~condition].copy()
 
         if not clean_df.empty:
-            target_cols = ["ticket_id", "order_id", "created_date_id", "customer_id", "restaurant_id", "driver_id", "region_id", "agent_sk", "reason_id", "priority_id", "channel_id", "ticket_create_time", "sla_first_due_at", "sla_resolve_due_at", "first_response_at", "resolved_at", "status", "refund_amount", "resolved_on_time", "resolve_from_creating_min", "resolve_from_response_min", "delay_of_resolving"]
+            target_cols = ["ticket_id", "order_id", "created_date_id", "customer_sk", "restaurant_id", "driver_sk", "region_id", "agent_sk", "reason_id", "priority_id", "channel_id", "ticket_create_time", "sla_first_due_at", "sla_resolve_due_at", "first_response_at", "resolved_at", "status", "refund_amount", "resolved_on_time", "resolve_from_creating_min", "resolve_from_response_min", "delay_of_resolving"]
             df_to_insert = clean_for_psycopg2(clean_df, target_cols)
             with engine_dwh.cursor() as cur:
                 extras.execute_values(cur, f"INSERT INTO DWH.fact_tickets ({','.join(target_cols)}) VALUES %s", 
@@ -136,34 +141,7 @@ def load_fact_ticket(input_df=None, db_name='dwh_db', orphan_db='orphan_db'):
         engine_dwh.close()
         engine_orphan.close()
 
-# --- 3. Load Ticket Events (SLA Update Logic) ---
-def load_ticket_event(input_df, db_name='dwh_db'):
-    engine_dwh = connect_to_db.get_postgres_conn(db_name)
-    try:
-        input_df['event_ts'] = pd.to_datetime(input_df['event_ts'])
-        ticket_ids = input_df['ticket_id'].unique()
 
-        with engine_dwh.cursor() as cur:
-            for t_id in ticket_ids:
-                df = input_df[input_df['ticket_id'] == t_id].sort_values('event_ts')
-                
-                # Logic to extract timestamps from statuses
-                times = {s: df[df['new_status'] == s]['event_ts'].min() for s in ['Open', 'InProgress', 'Resolved', 'Closed']}
-                latest_status = df.iloc[-1]['new_status']
-
-                # Calculations
-                creating_min = (times['Resolved'] - times['Open']).total_seconds() / 60 if times['Resolved'] and times['Open'] else None
-                response_min = (times['Resolved'] - times['InProgress']).total_seconds() / 60 if times['Resolved'] and times['InProgress'] else None
-                on_time = creating_min <= 60 if creating_min else None
-
-                cur.execute("""
-                    UPDATE DWH.fact_tickets SET ticket_create_time=%s, first_response_at=%s, resolved_at=%s, 
-                    status=%s, resolve_from_creating_min=%s, resolve_from_response_min=%s, resolved_on_time=%s
-                    WHERE ticket_id=%s
-                """, (times['Open'], times['InProgress'], times['Resolved'], latest_status, creating_min, response_min, on_time, t_id))
-        engine_dwh.commit()
-    finally:
-        engine_dwh.close()
 
 if __name__ == "__main__":
     try:
