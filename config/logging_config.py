@@ -19,7 +19,7 @@ def setup_logging():
     # Fields: timestamp | level | module that called the logger | message
     
     formatter = logging.Formatter(
-        format="%(asctime)s | %(levelname)-8s | %(module)-25s | %(message)s",
+        fmt="%(asctime)s | %(levelname)-8s | %(module)-25s | %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S"
     )
 

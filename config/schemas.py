@@ -54,28 +54,23 @@ CUSTOMERS_SCHEMA = {
     "source_file": "customers.csv",
     "primary_key": "customer_id",
     "required_columns": [
-        "customer_id", "full_name", "email", "phone", "region_id", 
-        "segment_id", "signup_date", "gender", "created_at", "updated_at"
+        "customer_id", "full_name", "email", "phone",
+        "segment_id", "signup_date", "gender"
     ],
     "dtypes": {
         "customer_id": INT,
-        "full_name": STR,
-        "email": STR,
-        "phone": STR,
-        "region_id": FLT,
-        "segment_id": INT,
-        "signup_date": DATE,
-        "gender": STR,
-        "created_at": DT,
-        "updated_at": DT,
+        "full_name":   STR,
+        "email":       STR,
+        "phone":       STR,
+        "segment_id":  INT,
+        "signup_date": STR,
+        "gender":      STR,
     },
     "pii_columns": ["full_name", "email", "phone"],
     "foreign_keys": {
         "segment_id": "segments",
-        "region_id": "regions",
     },
-    # DWH-safe columns (PII stripped)
-    "dwh_columns":  ["customer_id", "segment_id", "gender", "signup_date"]
+    "dwh_columns": ["customer_id", "segment_id", "gender", "signup_date"]
 }
 
 CATEGORIES_SCHEMA = {
