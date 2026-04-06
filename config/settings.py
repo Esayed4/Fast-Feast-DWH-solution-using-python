@@ -31,8 +31,7 @@ ORPHAN_DB_PATH = Path(os.getenv("ORPHAN_DB_PATH", "data/orphan_db.db"))
 # =============================================================================
 
 # QUARANTINE PATHS
-
-QUARANTINE_BAD_FILES_DIR = Path(os.getenv("QUARANTINE_BAD_FILES_DIR", "quarantine"))
+QUARANTINE_ROOT = Path(os.getenv("QUARANTINE_ROOT", "quarantine"))
 QUARANTINE_DB_PATH = Path(os.getenv("QUARANTINE_DB_PATH", "quarantine/quarantine.db"))
 
 # =============================================================================
@@ -57,7 +56,7 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 # VALIDATION RULES
  
 EMAIL_REGEX        = os.getenv("EMAIL_REGEX", r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
-PHONE_REGEX        = os.getenv("PHONE_REGEX", r"^(010|011|012|015)\d{8}$")
+PHONE_REGEX        = os.getenv("PHONE_REGEX", r"^(10|11|12|15)\d{8}$")
 RATING_MIN         = float(os.getenv("RATING_MIN", "0.0"))
 RATING_MAX         = float(os.getenv("RATING_MAX", "5.0"))
 AMOUNT_MIN         = float(os.getenv("AMOUNT_MIN", "0.0"))
