@@ -5,6 +5,8 @@ import os
 import sys
 import logging
 
+from transform.transform_order import transform_to_order_fact
+
 # 1. Path and Logging Setup
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
@@ -84,6 +86,10 @@ def transform_tickets_to_fact(input_df):
     except Exception as e:
         logger.error(f"Ticket transformation failed: {e}")
         raise
+# df = pd.read_json("output_tickets_clean.json", orient="records")
+# df_fact = transform_to_string_fact(df)
+# df_fact.to_json("output_tickets_fact.json", orient="records", indent=2)
+# print(df_fact.dtypes)
 
 # # --- Test with your provided data ---
 # if __name__ == "__main__":
