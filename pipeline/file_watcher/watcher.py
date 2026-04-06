@@ -24,7 +24,7 @@ from pathlib import Path
 from config.settings import STREAM_INPUT_DIR
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from pipeline.stream_processor import run_stream
+from pipeline.validator_pipeline import run_stream
 from queue import Queue, Empty
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class StreamEventHandler(FileSystemEventHandler):
         """
         Called when a file or directory is created.
         
-        Only processes directory creation events at the hour level
+        Only processes directory creation events
         Includes a settle time to ensure all files in the directory
         have been written before queuing for processing.
 
@@ -178,7 +178,7 @@ def watcher(run_date = None):
                     logger.info(
                         f"[QUEUE] Completed {date_str}/{hour_str} - "
                         f"Files: {metrics['total_files_processed']}, "
-                        f"Rows: {metrics['total_rows_in']} → "
+                        f"Rows: {metrics['total_rows_in']} -> "
                         f"Clean: {metrics['total_rows_clean']}, "
                         f"Rejected: {metrics['total_rows_rejected']}"
                     )
