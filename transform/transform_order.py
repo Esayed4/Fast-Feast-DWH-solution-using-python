@@ -19,7 +19,7 @@ except ImportError:
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
 
-def transform_to_string_fact(input_df):
+def transform_to_order_fact(input_df):
     """
     Transforms input into a Fact table format where all 
     date/time fields are strictly strings.
@@ -69,6 +69,10 @@ def transform_to_string_fact(input_df):
         logger.error(f"Transformation failed: {str(e)}")
         raise
 
+# df = pd.read_json("output_orders_clean.json", orient="records")
+# df_fact = transform_to_string_fact(df)
+# df_fact.to_json("output_orders_fact.json", orient="records", indent=2)
+# print(df_fact.dtypes)
 # --- Test Execution ---
 
 # raw_data = {

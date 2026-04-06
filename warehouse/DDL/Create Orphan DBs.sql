@@ -36,9 +36,9 @@ CREATE TABLE orphan.orphan_fact_tickets (
     ticket_id                VARCHAR(50) ,           
     order_id                 VARCHAR(50),                       -- Reference to fact_orders or source
     created_date_id         INT,                       -- FK to dim_date (YYYYMMDD)
-    customer_sk             INT  ,
+    customer_id             INT  ,
     restaurant_id           INT  ,
-    driver_sk               INT  ,
+    driver_id               INT  ,
     region_id               INT,
     agent_id                INT  ,
     reason_id               INT,
