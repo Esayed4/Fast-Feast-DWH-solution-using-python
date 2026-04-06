@@ -2,7 +2,6 @@ import argparse
 import sys
 from pipeline.file_watcher.watcher import watcher
 from config.logging_config import setup_logging         
-from pipeline.file_watcher.watcher import watcher
 import logging
 
 setup_logging()
