@@ -160,7 +160,7 @@ def process_file(file_path: Path, table_name: str, run_date: str) -> dict:
     
     # Check for empty file
     if df.empty:
-        logger.warning(f"  [BAD FILE] File is empty: {file_path.name}")
+        logger.error(f"  [BAD FILE] File is empty: {file_path.name}")
         metrics["is_bad_file"] = True
         metrics["bad_rows_count"] = 0
         
@@ -183,7 +183,7 @@ def process_file(file_path: Path, table_name: str, run_date: str) -> dict:
     
     # Check for schema not found
     if "SCHEMA_NOT_FOUND" in schema_metrics.get("missing_columns", []):
-        logger.warning(f"  [BAD FILE] Schema not found for table: {table_name}")
+        logger.error(f"  [BAD FILE] Schema not found for table: {table_name}")
         metrics["is_bad_file"] = True
         metrics["bad_rows_count"] = len(df)
         
@@ -200,7 +200,7 @@ def process_file(file_path: Path, table_name: str, run_date: str) -> dict:
     
     # Check for missing required columns (structural failure)
     if schema_metrics.get("missing_columns"):
-        logger.warning(f"  [BAD FILE] Missing required columns: {schema_metrics['missing_columns']}")
+        logger.error(f"  [BAD FILE] Missing required columns: {schema_metrics['missing_columns']}")
         metrics["is_bad_file"] = True
         metrics["bad_rows_count"] = len(df)
         
