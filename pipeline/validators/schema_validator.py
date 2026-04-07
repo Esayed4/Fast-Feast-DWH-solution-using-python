@@ -149,7 +149,6 @@ def schema_validate(df:pd.DataFrame, table_name: str)->tuple[pd.DataFrame, pd.Da
                 if bad_mask_in_clean.any():
                     # Convert the boolean mask from clean rows back to full dataframe index
                     full_bad_mask = pd.Series(False, index=df.index)
-                   # FIX
                     full_bad_mask = full_bad_mask.astype(object)
                     full_bad_mask[clean_mask] = bad_mask_in_clean
                     full_bad_mask = full_bad_mask.astype(bool)

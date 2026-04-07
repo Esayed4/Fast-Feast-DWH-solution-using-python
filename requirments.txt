@@ -1,2 +1,4 @@
 pandas
 watchdog
+python-dotenv
+pytest

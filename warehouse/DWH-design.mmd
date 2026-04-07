@@ -26,7 +26,8 @@ erDiagram
     }
 
     dim_customer {
-        int     customer_id   PK
+        int     customer_sk  PK
+        int     customer_id   
         int     segment_id    FK
         string  gender
         date    signup_date
@@ -64,7 +65,8 @@ erDiagram
     }
 
     dim_driver {
-        int     driver_id      PK
+        int     driver_sk     PK
+        int     driver_id      
         string  shift
         string  vehicle_type
         date    hire_date
@@ -83,7 +85,8 @@ erDiagram
     }
 
     dim_agent {
-        int     agent_id             PK
+        int     agent_sk            PK
+        int     agent_id             
         int     team_id              FK
         string  skill_level
         date    hire_date
@@ -123,15 +126,15 @@ erDiagram
     }
 
     fact_orders {
-        int      order_id              PK
-        int      order_date            FK
-        int      customer_id           FK
+        string   order_id              PK
+        int      order_date_id         FK
+        int      customer_sk           FK
         int      restaurant_id         FK
-        int      driver_id             FK
+        int      driver_sk             FK
         int      region_id             FK
         datetime order_time
         datetime delivery_time
-        datetime timestamp
+        datetime row_timestamp
         float    order_amount
         string   status
         float    delivery_duration_min
@@ -139,14 +142,14 @@ erDiagram
     }
 
     fact_tickets {
-        int      ticket_id                    PK
-        int      order_id                     FK
-        int      created_id                   FK
-        int      customer_id                  FK
+        string   ticket_id                    PK
+        string   order_id                     FK
+        int      created_date_id              FK
+        int      customer_sk                  FK
         int      restaurant_id                FK
-        int      driver_id                    FK
+        int      driver_sk                    FK
         int      region_id                    FK
-        int      agent_id                     FK
+        int      agent_sk                     FK
         int      reason_id                    FK
         int      priority_id                  FK
         int      channel_id                   FK
