@@ -136,7 +136,21 @@ def run_batch():
             # else:
             #     print(f"  [SKIP] dim_date already covers {batch_date}")
 
-            # Step 6: mark batch as complete
+            # Step 6: retry streaming orphans now that dimensions are updated
+            print("\n--- Retrying streaming orphans ---")
+            try:
+                load_fact_order(handle_order_orphan())
+                print("  [OK] Order orphans retried")
+            except Exception as e:
+                print(f"  [WARN] Order orphan retry failed — {e}")
+
+            try:
+                load_fact_ticket(handle_ticket_orphan())
+                print("  [OK] Ticket orphans retried")
+            except Exception as e:
+                print(f"  [WARN] Ticket orphan retry failed — {e}")
+
+            # Step 7: mark batch as complete
             mark_batch_processed(batch_date)
             print(f"\n[DONE] Batch {batch_date} completed successfully")
 
@@ -147,8 +161,8 @@ def run_batch():
             print(f"\n[FAILED] Batch {batch_date} failed — {e}")
             conn.rollback()
 
-    load_fact_order(handle_order_orphan())
-    load_fact_ticket(handle_ticket_orphan())
+    
+    
     conn.close()
     pii_conn.close()
 
