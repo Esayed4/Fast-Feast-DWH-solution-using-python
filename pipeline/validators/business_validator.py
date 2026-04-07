@@ -25,7 +25,8 @@ from config import settings as s
 import logging
 
 _EMAIL_RE = re.compile(s.EMAIL_REGEX)
-_PHONE_RE = re.compile(s.PHONE_REGEX)
+_PHONE_RE       = re.compile(s.PHONE_REGEX)
+_AGENT_PHONE_RE = re.compile(s.AGENT_PHONE_REGEX)
 
 logger = logging.getLogger(__name__)
 
@@ -120,14 +121,26 @@ def business_validate(df: pd.DataFrame, table_name: str,) -> tuple[pd.DataFrame,
                 )
                 _flag(invalid, "email_invalid", col)
     
-    # --------------------------- Step 2: Phone Format Validation --------------------------
-    phone_columns = ["phone", "driver_phone", "agent_phone"]
-    for col in phone_columns:
+    
+# --------------------------- Step 2: Phone Format Validation --------------------------
+    # customers and drivers have leading 0, agents don't
+    customer_driver_phones = ["phone", "driver_phone"]
+    for col in customer_driver_phones:
         if col in df.columns:
             non_null = df[col].notna()
             if non_null.any():
                 invalid = non_null & ~df.loc[non_null, col].apply(
                     lambda v: bool(_PHONE_RE.match(str(v)))
+                )
+                _flag(invalid, "phone_invalid", col)
+
+    agent_phones = ["agent_phone"]
+    for col in agent_phones:
+        if col in df.columns:
+            non_null = df[col].notna()
+            if non_null.any():
+                invalid = non_null & ~df.loc[non_null, col].apply(
+                    lambda v: bool(_AGENT_PHONE_RE.match(str(v)))
                 )
                 _flag(invalid, "phone_invalid", col)
     

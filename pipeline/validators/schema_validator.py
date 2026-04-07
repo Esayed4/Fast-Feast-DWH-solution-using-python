@@ -149,8 +149,10 @@ def schema_validate(df:pd.DataFrame, table_name: str)->tuple[pd.DataFrame, pd.Da
                 if bad_mask_in_clean.any():
                     # Convert the boolean mask from clean rows back to full dataframe index
                     full_bad_mask = pd.Series(False, index=df.index)
+                    full_bad_mask = full_bad_mask.astype(object)
                     full_bad_mask[clean_mask] = bad_mask_in_clean
-                    
+                    full_bad_mask = full_bad_mask.astype(bool)
+                                        
                     count = int(bad_mask_in_clean.sum())
                     metrics["dtype_fails"][col] = count
                     
@@ -193,7 +195,7 @@ def _find_bad_values(series: pd.Series, dtype: str) -> pd.Series:
     """
     not_null = series.notna()
 
-    if dtype in (INT, FLT):
+    if dtype in (INT):
         numeric = pd.to_numeric(series, errors="coerce")
         return not_null & numeric.isna()
 
