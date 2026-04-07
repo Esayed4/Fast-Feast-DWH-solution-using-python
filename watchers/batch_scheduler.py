@@ -10,7 +10,7 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if ROOT_DIR not in sys.path:
     sys.path.append(ROOT_DIR)
 
-from pipeline.batch.batch_runner import run_batch
+from orchestrator.batch_pipeline import run_batch
 
 
 def job():

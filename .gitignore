@@ -1,1 +1,7 @@
 data/*
+.env
+__pycache__
+*.pyc
+logs/*
+quarantine/*
+tests/*
