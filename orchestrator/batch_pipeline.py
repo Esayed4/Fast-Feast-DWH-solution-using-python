@@ -1,4 +1,4 @@
-# pipeline/batch/batch_runner.py
+
 
 import sys
 import os
@@ -139,13 +139,13 @@ def run_batch():
             # Step 6: retry streaming orphans now that dimensions are updated
             print("\n--- Retrying streaming orphans ---")
             try:
-                load_fact_order(handle_order_orphan())
+                handle_order_orphan()
                 print("  [OK] Order orphans retried")
             except Exception as e:
                 print(f"  [WARN] Order orphan retry failed — {e}")
 
             try:
-                load_fact_ticket(handle_ticket_orphan())
+                handle_ticket_orphan()
                 print("  [OK] Ticket orphans retried")
             except Exception as e:
                 print(f"  [WARN] Ticket orphan retry failed — {e}")
