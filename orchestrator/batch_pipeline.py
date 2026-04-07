@@ -21,7 +21,10 @@ from loader.PII_writer import upsert_scd1
 from transformer.deduplicator import deduplicate
 from loader.load_stream_data import load_fact_order
 from loader.load_stream_data import load_fact_ticket
-from warehouse.Handel_Orphan import handle_order_orphan, handle_ticket_orphan
+from warehouse.Handle_Orphan import handle_order_orphan, handle_ticket_orphan
+from logger.alert_handler import register_alert_handler
+
+register_alert_handler()
 
 SCD1_TABLES = [
     "segments",

@@ -13,7 +13,6 @@ if ROOT_DIR not in sys.path:
 try:
     from config import settings
     from config.logging_config import setup_logging
-    setup_logging()
     logger = logging.getLogger(__name__)
 except ImportError as e:
     print(f"Import Error: {e}")

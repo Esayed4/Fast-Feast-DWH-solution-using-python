@@ -46,7 +46,7 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 # ALERT SETTINGS
 ALERT_EMAIL_FROM = os.getenv("ALERT_EMAIL_FROM")
 ALERT_EMAIL_TO   = os.getenv("ALERT_EMAIL_TO")
-SMTP_HOST        = os.getenv("SMTP_HOST")
+SMTP_HOST        = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT        = int(os.getenv("SMTP_PORT", "587"))
 SMTP_PASSWORD    = os.getenv("SMTP_PASSWORD")
 

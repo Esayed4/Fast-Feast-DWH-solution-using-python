@@ -19,7 +19,8 @@ from config.settings import (
 def register_alert_handler():
 
     # Create a logging.Handler just for error level
-    handler = logging.Handler().setLevel(logging.ERROR)
+    handler = logging.Handler()
+    handler.setLevel(logging.ERROR)
 
     # Replace the handler's emit method with our own function for email
     handler.emit = _email_format

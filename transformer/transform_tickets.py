@@ -14,7 +14,6 @@ if ROOT_DIR not in sys.path:
 
 try:
     from config.logging_config import setup_logging
-    setup_logging()
     logger = logging.getLogger(__name__)
 except ImportError:
     logging.basicConfig(level=logging.INFO)
