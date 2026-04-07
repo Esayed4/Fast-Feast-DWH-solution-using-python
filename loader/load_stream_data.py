@@ -6,7 +6,7 @@ import numpy as np
 import psycopg2
 from psycopg2 import extras
 from datetime import datetime
-from warehouse.LoadData import connect_to_db
+from loader import connect_to_db
 
 # 1. Path and Logging Setup
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))

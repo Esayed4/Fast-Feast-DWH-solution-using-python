@@ -24,7 +24,7 @@ from pathlib import Path
 from config.settings import STREAM_INPUT_DIR
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from pipeline.validator_pipeline import run_stream
+from orchestrator.stream_pipeline import run_stream
 from queue import Queue, Empty
 
 logger = logging.getLogger(__name__)

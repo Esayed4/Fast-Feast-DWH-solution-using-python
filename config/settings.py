@@ -39,7 +39,7 @@ QUARANTINE_DB_PATH = Path(os.getenv("QUARANTINE_DB_PATH", "quarantine/quarantine
 
 # =============================================================================
 # LOGGING
-LOG_DIR   = Path(os.getenv("LOG_DIR", "logging/logs"))
+LOG_DIR   = Path(os.getenv("LOG_DIR", "logs"))
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
 # =============================================================================

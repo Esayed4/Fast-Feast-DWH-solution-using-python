@@ -12,7 +12,7 @@ if ROOT_DIR not in sys.path:
     sys.path.append(ROOT_DIR)
 
 # 2. Import local modules
-import connect_to_db # Assuming this contains your get_postgres_conn function
+from loader.connect_to_db import get_postgres_conn # Assuming this contains your get_postgres_conn function
 try:
     from config import settings
     from config.logging_config import setup_logging
@@ -24,7 +24,7 @@ except ImportError as e:
 
 def handle_order_orphan(db_name='dwh_db', orphan_db='orphan_db'):
     """Re-processes orphan orders by pulling them from the orphan DB and clearing it."""
-    engine_orphan = connect_to_db.get_postgres_conn(orphan_db)
+    engine_orphan = get_postgres_conn(orphan_db)
     if not engine_orphan:
         logger.error(f"Could not connect to {orphan_db}. Skipping order orphans.")
         return
@@ -68,7 +68,7 @@ def handle_order_orphan(db_name='dwh_db', orphan_db='orphan_db'):
 
 def handle_ticket_orphan(db_name='dwh_db', orphan_db='orphan_db'):
     """Re-processes orphan tickets by pulling them from the orphan DB and clearing it."""
-    engine_orphan = connect_to_db.get_postgres_conn(orphan_db)
+    engine_orphan = get_postgres_conn(orphan_db)
     if not engine_orphan:
         logger.error(f"Could not connect to {orphan_db}. Skipping ticket orphans.")
         return

@@ -5,17 +5,22 @@ Stream processor that handles incoming data through the validation pipeline
 
 import logging
 import time
+import os
+import sys
 from pathlib import Path
 import pandas as pd
 from config import settings as s
-from pipeline.shared_scripts.extractor import load_file
-from pipeline.validators.schema_validator import schema_validate
-from pipeline.validators.business_validator import business_validate
-from pipeline.validators.quarantine_writer import quarantine_bad_file, quarantine_bad_rows
+from reader.extractor import load_file
+from validators.schema_validator import schema_validate
+from validators.business_validator import business_validate
+from validators.quarantine_writer import quarantine_bad_file, quarantine_bad_rows
 from config.schemas import SCHEMA_REGISTRY
+from transformer.transform_order import transform_to_order_fact 
+from transformer.transform_tickets import transform_tickets_to_fact
+from loader.load_stream_data import load_fact_order
+from loader.load_stream_data import load_fact_ticket
 
 logger = logging.getLogger(__name__)
-
 
 def run_stream(run_date: str, hour: str):
     """
@@ -48,18 +53,15 @@ def run_stream(run_date: str, hour: str):
         logger.warning(f"Path exists but is not a directory: {hour_dir}")
         return metrics
     
-    # Define file to table mapping
-
     # Build file mapping from SCHEMA_REGISTRY
     file_mapping = {}
     for table_name, schema in SCHEMA_REGISTRY.items():
         source_file = schema.get("source_file")
         if source_file:
-            # Check if this is a stream table or batch table
             is_stream_table = table_name in ["orders", "tickets", "ticket_events"]
             file_mapping[source_file] = {
                 "table": table_name,
-                "required": is_stream_table  # the Stream tables are required, batch optional
+                "required": is_stream_table
             }
 
     # Process each file
@@ -263,5 +265,12 @@ def process_file(file_path: Path, table_name: str, run_date: str) -> dict:
             reason_prefix=f"[{table_name}] "
         )
         logger.info(f"  [OK] Rejected rows appended to quarantine/{run_date}/{table_name}_rejected.csv")
-    
+
+    if table_name == "orders":
+        clean_business_order = transform_to_order_fact(clean_business)
+        load_fact_order(clean_business_order)
+    elif table_name == "tickets":
+        clean_business_ticket = transform_tickets_to_fact(clean_business)
+        load_fact_ticket(clean_business_ticket)
+
     return metrics

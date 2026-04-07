@@ -7,10 +7,10 @@ from typing import Tuple, Dict, Any
 import sys
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from pipeline.shared_scripts.extractor import load_file
-from pipeline.batch.writer import write_pii_records
-from pipeline.validators.schema_validator import schema_validate
-from pipeline.validators.business_validator import business_validate
+from reader.extractor import load_file
+from loader.PII_writer import write_pii_records
+from validators.schema_validator import schema_validate
+from validators.business_validator import business_validate
 
 FILE_NAMES = {
     "customers":         "customers.csv",

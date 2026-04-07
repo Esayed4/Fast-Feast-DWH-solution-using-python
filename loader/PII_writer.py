@@ -1,4 +1,3 @@
-# pipeline/shared_scripts/writer.py
 
 import pandas as pd
 
