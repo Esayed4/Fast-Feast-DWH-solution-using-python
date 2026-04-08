@@ -1,0 +1,145 @@
+table 'dwh dim_agent'
+	lineageTag: 23355b89-ffc8-48a2-9a42-e82574f20dd9
+
+	column agent_sk
+		dataType: int64
+		isNullable: false
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 6e07a98f-1b07-43e6-b878-4a1f48d3b96a
+		summarizeBy: none
+		sourceColumn: agent_sk
+
+		annotation SummarizationSetBy = Automatic
+
+	column agent_id
+		dataType: int64
+		isNullable: false
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 569b3750-117d-4a5a-992a-7873fd5ace20
+		summarizeBy: sum
+		sourceColumn: agent_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column team_id
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 3e51e6cc-0dbb-4e89-8b92-1f6894a3dd31
+		summarizeBy: none
+		sourceColumn: team_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column skill_level
+		dataType: string
+		sourceProviderType: nvarchar(max)
+		lineageTag: d492aad9-21be-40ca-9cd8-0a1767fcdcb4
+		summarizeBy: none
+		sourceColumn: skill_level
+
+		annotation SummarizationSetBy = Automatic
+
+	column hire_date
+		dataType: dateTime
+		formatString: Long Date
+		sourceProviderType: date
+		lineageTag: 7cda0cfb-4a50-46de-8388-4308a60320b4
+		summarizeBy: none
+		sourceColumn: hire_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column avg_handle_time_min
+		dataType: double
+		sourceProviderType: decimal
+		lineageTag: 63895a07-a7df-4a1b-8e2f-6b2d76d56881
+		summarizeBy: sum
+		sourceColumn: avg_handle_time_min
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column resolution_rate
+		dataType: double
+		sourceProviderType: decimal
+		lineageTag: 35a5eaa6-1e90-4ccc-babe-f92f53e759bc
+		summarizeBy: sum
+		sourceColumn: resolution_rate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column csat_score
+		dataType: double
+		sourceProviderType: decimal
+		lineageTag: 293a59de-bd73-4f44-9acb-fbab27f21bbc
+		summarizeBy: sum
+		sourceColumn: csat_score
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column is_active
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		sourceProviderType: bit
+		lineageTag: 9ae074b5-fc39-4a8a-ab00-31244bf0fdc0
+		summarizeBy: none
+		sourceColumn: is_active
+
+		annotation SummarizationSetBy = Automatic
+
+	column start_date
+		dataType: dateTime
+		isNullable: false
+		formatString: Long Date
+		sourceProviderType: date
+		lineageTag: df629438-d486-48ad-a19b-259e0aa2a97a
+		summarizeBy: none
+		sourceColumn: start_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column end_date
+		dataType: dateTime
+		formatString: Long Date
+		sourceProviderType: date
+		lineageTag: 5109f069-da7b-4adb-909e-560175ae45bf
+		summarizeBy: none
+		sourceColumn: end_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column is_current
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		sourceProviderType: bit
+		lineageTag: c7b932dd-2d40-47b9-8778-cbbfe665c3bf
+		summarizeBy: none
+		sourceColumn: is_current
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'dwh dim_agent' = m
+		mode: directQuery
+		source =
+				let
+				    Source = PostgreSQL.Database("localhost:5432", "dwh_db"),
+				    dwh_dim_agent = Source{[Schema="dwh",Item="dim_agent"]}[Data]
+				in
+				    dwh_dim_agent
+
+	annotation PBI_ResultType = Table
+

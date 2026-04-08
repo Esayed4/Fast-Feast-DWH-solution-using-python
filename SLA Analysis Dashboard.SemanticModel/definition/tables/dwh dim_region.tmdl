@@ -1,0 +1,55 @@
+table 'dwh dim_region'
+	lineageTag: 67c2cd44-8951-4e11-bcd1-9250e1de0f21
+
+	column region_id
+		dataType: int64
+		isNullable: false
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 3e59100f-cbbb-42b9-8928-94e88d28516f
+		summarizeBy: none
+		sourceColumn: region_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column region_name
+		dataType: string
+		sourceProviderType: nvarchar(max)
+		lineageTag: eb791a54-d68b-41ca-91ca-15c6d9f6a211
+		summarizeBy: none
+		sourceColumn: region_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column city_id
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 6c986f7e-d7e5-4ea8-ad8d-0c2379f58535
+		summarizeBy: none
+		sourceColumn: city_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column delivery_base_fee
+		dataType: double
+		sourceProviderType: decimal
+		lineageTag: 215b1a26-bae4-42f7-86a3-ae6cfea3289c
+		summarizeBy: sum
+		sourceColumn: delivery_base_fee
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition 'dwh dim_region' = m
+		mode: directQuery
+		source =
+				let
+				    Source = PostgreSQL.Database("localhost:5432", "dwh_db"),
+				    dwh_dim_region = Source{[Schema="dwh",Item="dim_region"]}[Data]
+				in
+				    dwh_dim_region
+
+	annotation PBI_ResultType = Table
+

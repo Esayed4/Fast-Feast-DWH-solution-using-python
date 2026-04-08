@@ -1,0 +1,55 @@
+table 'dwh dim_segment'
+	lineageTag: f2729a79-b5e0-4d54-8682-fd4310858603
+
+	column segment_id
+		dataType: int64
+		isNullable: false
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 09702a20-5684-4b90-8a2f-ee3f0da13de6
+		summarizeBy: none
+		sourceColumn: segment_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column segment_name
+		dataType: string
+		sourceProviderType: nvarchar(max)
+		lineageTag: b8b6b944-005e-4b99-95e1-eeba2323fea3
+		summarizeBy: none
+		sourceColumn: segment_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column discount_pct
+		dataType: double
+		sourceProviderType: decimal
+		lineageTag: 50c38697-8968-46f0-ac51-c11e2d645969
+		summarizeBy: none
+		sourceColumn: discount_pct
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column priority_support
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		sourceProviderType: bit
+		lineageTag: 754eb045-f027-4ab5-9f25-3eadb4ef5f07
+		summarizeBy: none
+		sourceColumn: priority_support
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'dwh dim_segment' = m
+		mode: directQuery
+		source =
+				let
+				    Source = PostgreSQL.Database("localhost:5432", "dwh_db"),
+				    dwh_dim_segment = Source{[Schema="dwh",Item="dim_segment"]}[Data]
+				in
+				    dwh_dim_segment
+
+	annotation PBI_ResultType = Table
+

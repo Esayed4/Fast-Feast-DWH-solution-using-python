@@ -1,0 +1,85 @@
+table 'dwh dim_restaurant'
+	lineageTag: b2ffdefd-588b-4e27-a2ca-1bc655707a0c
+
+	column restaurant_id
+		dataType: int64
+		isNullable: false
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: eefc299e-69b9-472b-8616-cfde027fc2af
+		summarizeBy: none
+		sourceColumn: restaurant_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column restaurant_name
+		dataType: string
+		sourceProviderType: nvarchar(max)
+		lineageTag: ffdfe5ea-8062-4579-a315-1572ac0e8de9
+		summarizeBy: none
+		sourceColumn: restaurant_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column category_id
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 976c21dd-975c-471e-8445-79173854ab3c
+		summarizeBy: none
+		sourceColumn: category_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column price_tier
+		dataType: string
+		sourceProviderType: nvarchar(max)
+		lineageTag: 32b4c562-5a3d-4776-92e0-f961e4f8163f
+		summarizeBy: none
+		sourceColumn: price_tier
+
+		annotation SummarizationSetBy = Automatic
+
+	column rating_avg
+		dataType: double
+		sourceProviderType: decimal
+		lineageTag: 5d04a5b6-3abb-4cc4-a245-6304715ad9f8
+		summarizeBy: sum
+		sourceColumn: rating_avg
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column prep_time_avg_min
+		dataType: double
+		sourceProviderType: decimal
+		lineageTag: a0b3899e-2cb2-4d9e-be92-dcca57f73f22
+		summarizeBy: sum
+		sourceColumn: prep_time_avg_min
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column is_active
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		sourceProviderType: bit
+		lineageTag: 21b91afc-9818-4841-8290-1cd64701526f
+		summarizeBy: none
+		sourceColumn: is_active
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'dwh dim_restaurant' = m
+		mode: directQuery
+		source =
+				let
+				    Source = PostgreSQL.Database("localhost:5432", "dwh_db"),
+				    dwh_dim_restaurant = Source{[Schema="dwh",Item="dim_restaurant"]}[Data]
+				in
+				    dwh_dim_restaurant
+
+	annotation PBI_ResultType = Table
+

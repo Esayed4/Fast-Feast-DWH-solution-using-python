@@ -1,0 +1,52 @@
+table 'dwh dim_city'
+	lineageTag: f56dc9c9-b684-4e37-a231-0a5284926a00
+
+	column city_id
+		dataType: int64
+		isNullable: false
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 9357b92b-bfd4-47cc-b633-89cd88e19a2c
+		summarizeBy: none
+		sourceColumn: city_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column city_name
+		dataType: string
+		sourceProviderType: nvarchar(max)
+		lineageTag: 106d920c-9428-453e-b27a-606c6c802337
+		summarizeBy: none
+		sourceColumn: city_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column country
+		dataType: string
+		sourceProviderType: nvarchar(max)
+		lineageTag: fb30d072-da8e-4a02-ad22-96cd1d98bc69
+		summarizeBy: none
+		sourceColumn: country
+
+		annotation SummarizationSetBy = Automatic
+
+	column timezone
+		dataType: string
+		sourceProviderType: nvarchar(max)
+		lineageTag: 664ccb7e-368c-49f6-ab67-55b7f5eb182b
+		summarizeBy: none
+		sourceColumn: timezone
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'dwh dim_city' = m
+		mode: directQuery
+		source =
+				let
+				    Source = PostgreSQL.Database("localhost:5432", "dwh_db"),
+				    dwh_dim_city = Source{[Schema="dwh",Item="dim_city"]}[Data]
+				in
+				    dwh_dim_city
+
+	annotation PBI_ResultType = Table
+

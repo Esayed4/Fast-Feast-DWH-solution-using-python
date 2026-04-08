@@ -1,0 +1,32 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 1
+
+annotation PBI_QueryOrder = ["dwh dim_agent","dwh dim_category","dwh dim_city","dwh dim_customer","dwh dim_date","dwh dim_driver","dwh dim_priority","dwh dim_reason","dwh dim_region","dwh dim_restaurant","dwh dim_segment","dwh dim_team","dwh fact_orders","dwh fact_tickets","Measures_Table"]
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table 'dwh dim_agent'
+ref table 'dwh dim_category'
+ref table 'dwh dim_city'
+ref table 'dwh dim_customer'
+ref table 'dwh dim_date'
+ref table 'dwh dim_driver'
+ref table 'dwh dim_priority'
+ref table 'dwh dim_reason'
+ref table 'dwh dim_region'
+ref table 'dwh dim_restaurant'
+ref table 'dwh dim_segment'
+ref table 'dwh dim_team'
+ref table 'dwh fact_orders'
+ref table 'dwh fact_tickets'
+ref table Measures_Table
+
+ref cultureInfo en-US
+

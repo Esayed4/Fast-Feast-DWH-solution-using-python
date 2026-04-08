@@ -1,0 +1,95 @@
+table 'dwh dim_date'
+	lineageTag: d89cb91a-05a1-4580-946a-72871b323837
+
+	column date_id
+		dataType: int64
+		isNullable: false
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 1f2f1edf-fef8-4e45-bd46-de8742930c56
+		summarizeBy: none
+		sourceColumn: date_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column full_date
+		dataType: dateTime
+		formatString: Long Date
+		sourceProviderType: date
+		lineageTag: cc74f11e-1f00-4efb-bf39-b42ef1ef8f95
+		summarizeBy: none
+		sourceColumn: full_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column day_of_week
+		dataType: string
+		sourceProviderType: nvarchar(max)
+		lineageTag: c61da83d-30fd-4d51-a14b-f3aced598134
+		summarizeBy: none
+		sourceColumn: day_of_week
+
+		annotation SummarizationSetBy = Automatic
+
+	column month
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: e9c65cf6-b409-4a0c-87d1-f760c5ffbdbf
+		summarizeBy: sum
+		sourceColumn: month
+
+		annotation SummarizationSetBy = Automatic
+
+	column month_name
+		dataType: string
+		sourceProviderType: nvarchar(max)
+		lineageTag: 4535427e-0a39-4e0d-8e2c-df58e48affd3
+		summarizeBy: none
+		sourceColumn: month_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column quarter
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 98deee88-c260-44ad-a213-08afd295d2a3
+		summarizeBy: sum
+		sourceColumn: quarter
+
+		annotation SummarizationSetBy = Automatic
+
+	column year
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 89d70267-b9b1-4f26-9b98-dc486b832f72
+		summarizeBy: sum
+		sourceColumn: year
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_weekend
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		sourceProviderType: bit
+		lineageTag: a5135efd-46ed-4571-930e-cd9eecf6a620
+		summarizeBy: none
+		sourceColumn: is_weekend
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'dwh dim_date' = m
+		mode: directQuery
+		source =
+				let
+				    Source = PostgreSQL.Database("localhost:5432", "dwh_db"),
+				    dwh_dim_date = Source{[Schema="dwh",Item="dim_date"]}[Data]
+				in
+				    dwh_dim_date
+
+	annotation PBI_ResultType = Table
+
