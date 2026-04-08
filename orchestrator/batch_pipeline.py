@@ -21,7 +21,7 @@ from loader.PII_writer import upsert_scd1
 from transformer.deduplicator import deduplicate
 from loader.load_stream_data import load_fact_order
 from loader.load_stream_data import load_fact_ticket
-from warehouse.Handle_Orphan import handle_order_orphan, handle_ticket_orphan
+from loader.Handle_Orphan_after_loading_batch import handle_order_orphan, handle_ticket_orphan
 from logger.alert_handler import register_alert_handler
 
 register_alert_handler()
