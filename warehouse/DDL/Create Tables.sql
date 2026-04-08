@@ -99,6 +99,17 @@ CREATE TABLE DWH.dim_agent (
     is_current          BOOLEAN DEFAULT TRUE
 );
 
+CREATE TABLE DWH.dim_date (
+    date_id     INT PRIMARY KEY,
+    full_date   DATE,
+    day_of_week VARCHAR(20),
+    month       INT,
+    month_name  VARCHAR(20),
+    quarter     INT,
+    year        INT,
+    is_weekend  BOOLEAN
+);
+
 CREATE TABLE DWH.fact_orders (
     order_id              VARCHAR(50) NOT NULL,
     order_date_id         INT,
