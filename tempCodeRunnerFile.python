@@ -1,0 +1,21 @@
+
+import pandas as pd
+from pipeline.validators.schema_validator import schema_validate
+from pipeline.validators.business_validator import business_validate
+
+for d in ['2026-02-23', '2026-02-24']:
+    df = pd.read_csv(f'data/input/batch/{d}/customers.csv')
+    clean, rejected, metrics = schema_validate(df, 'customers')
+    rej_501 = rejected[rejected['customer_id'] == 501]
+    if not rej_501.empty:
+        print(f'--- {d} REJECTED AT SCHEMA ---')
+        print(rej_501[['customer_id', 'rejection_reason']].to_string())
+    else:
+        print(f'--- {d} passed schema, checking business...')
+        clean2, rejected2, metrics2 = business_validate(clean, 'customers')
+        rej_501b = rejected2[rejected2['customer_id'] == 501]
+        if not rej_501b.empty:
+            print(f'--- {d} REJECTED AT BUSINESS ---')
+            print(rej_501b[['customer_id', 'rejection_reason']].to_string())
+        else:
+            print(f'--- {d} passed both validations')
