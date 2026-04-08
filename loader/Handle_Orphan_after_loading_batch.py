@@ -6,15 +6,18 @@ import psycopg2
 from psycopg2 import extras
 from datetime import datetime
 
-from loader.load_stream_data import load_fact_order, load_fact_order, load_fact_ticket
 
-# 1. Add project root to path
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__),  ".."))
 if ROOT_DIR not in sys.path:
     sys.path.append(ROOT_DIR)
 
-# 2. Import local modules
+from loader.load_stream_data import load_fact_order, load_fact_order, load_fact_ticket
 from loader.connect_to_db import get_postgres_conn # Assuming this contains your get_postgres_conn function
+
+# 1. Add project root to path
+
+
+# 2. Import local modules
 try:
     from config import settings
     from config.logging_config import setup_logging
