@@ -186,8 +186,11 @@ def watcher(run_date = None):
                         f"[QUEUE] Completed {date_str}/{hour_str} - "
                         f"Files: {metrics['total_files_processed']}, "
                         f"Rows: {metrics['total_rows_in']} -> "
-                        f"Clean: {metrics['total_rows_clean']}, "
-                        f"Rejected: {metrics['total_rows_rejected']}"
+                        # f"Clean: {metrics['total_rows_clean']}, "
+                        f"Rejected: {metrics['total_rows_rejected']}, "
+                        f"Orphan: {metrics['total_orphan_rows']},"
+                        f"Loaded: {metrics['total_loaded_rows']}, "
+                        
                     )
                 else:
                     logger.info(f"[QUEUE] No files found in {date_str}/{hour_str}")

@@ -44,6 +44,8 @@ def run_stream(run_date: str, hour: str):
         "total_rows_clean": 0,
         "total_rows_rejected": 0,
         "total_bad_files": 0,
+        "total_loaded_rows": 0,
+        "total_orphan_rows": 0,
         "processing_time": 0
     }
     
@@ -87,7 +89,9 @@ def run_stream(run_date: str, hour: str):
             metrics["total_rows_in"] += table_metrics.get("rows_in", 0)
             metrics["total_rows_clean"] += table_metrics.get("clean_rows", 0)
             metrics["total_rows_rejected"] += table_metrics.get("bad_rows_count", 0)
-            
+            metrics["total_loaded_rows"] += table_metrics.get("loaded_rows", 0)
+            metrics["total_orphan_rows"] += table_metrics.get("orphan_rows", 0)
+
             if table_metrics.get("is_bad_file", False):
                 metrics["total_bad_files"] += 1
             
@@ -112,10 +116,15 @@ def run_stream(run_date: str, hour: str):
     logger.info(f"Total rows input: {metrics['total_rows_in']:,}")
     logger.info(f"Total clean rows: {metrics['total_rows_clean']:,}")
     logger.info(f"Total bad rows (validation failures): {metrics['total_rows_rejected']:,}")
+    logger.info(f"Total orphan rows: {metrics['total_orphan_rows']:,}")
+    logger.info(f"Total loaded rows: {metrics['total_loaded_rows']:,}")
     
+
     if metrics['total_rows_in'] > 0:
-        acceptance_rate = (metrics['total_rows_clean'] / metrics['total_rows_in']) * 100
-        logger.info(f"Acceptance rate: {acceptance_rate:.2f}%")
+        validation_acceptance = (metrics['total_rows_clean'] / metrics['total_rows_in']) * 100
+        dwh_acceptance = (metrics['total_loaded_rows'] / metrics['total_rows_in']) * 100
+        logger.info(f"Validation acceptance rate: {validation_acceptance:.2f}%")
+        logger.info(f"DWH loaded rate: {dwh_acceptance:.2f}%")
     
     logger.info("=" * 70)
     
@@ -134,7 +143,9 @@ def process_file(file_path: Path, table_name: str, run_date: str) -> dict:
         "bad_rows_count": 0,
         "is_bad_file": False,
         "bad_file_path": None,
-        "bad_rows_path": None
+        "bad_rows_path": None,
+        "loaded_rows": 0,
+        "orphan_rows": 0
     }
     
     # Step 1: Extract data
@@ -271,9 +282,16 @@ def process_file(file_path: Path, table_name: str, run_date: str) -> dict:
 
     if table_name == "orders":
         clean_business_order = transform_to_order_fact(clean_business)
-        load_fact_order(clean_business_order)
+        loaded, orphan = load_fact_order(clean_business_order)
+        print(f"all clean business: {len(clean_business)}")
+        print(f"clean_orders: {len(clean_business_order)}")
+        metrics["loaded_rows"] = loaded
+        metrics["orphan_rows"] = orphan
     elif table_name == "tickets":
         clean_business_ticket = transform_tickets_to_fact(clean_business)
-        load_fact_ticket(clean_business_ticket)
-
+        loaded, orphan = load_fact_ticket(clean_business_ticket)
+        print(f"all clean business: {len(clean_business)}")
+        print(f"clean_tickets: {len(clean_business_ticket)}")
+        metrics["loaded_rows"] = loaded 
+        metrics["orphan_rows"] = orphan 
     return metrics
