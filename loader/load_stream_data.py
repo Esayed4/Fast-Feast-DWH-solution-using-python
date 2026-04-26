@@ -33,7 +33,7 @@ def clean_for_psycopg2(df, columns):
 def load_fact_order(input_df=None, db_name='dwh_db', orphan_db='orphan_db'):
     if input_df is None or input_df.empty:
         logger.info("No orders provided for processing.")
-        return
+        return 0, 0
 
     engine_dwh = connect_to_db.get_postgres_conn(db_name)
     engine_orphan = connect_to_db.get_postgres_conn(orphan_db)
@@ -57,6 +57,8 @@ def load_fact_order(input_df=None, db_name='dwh_db', orphan_db='orphan_db'):
 
         clean_df = processed_df[condition].copy()
         orphan_df = processed_df[~condition].copy()
+        loaded_count = 0
+        orphan_count = 0
 
         # Insert Clean Records
         if not clean_df.empty:
@@ -71,9 +73,12 @@ def load_fact_order(input_df=None, db_name='dwh_db', orphan_db='orphan_db'):
                 extras.execute_values(cur, f"INSERT INTO DWH.fact_orders ({','.join(target_cols)}) VALUES %s", 
                                       [tuple(x) for x in df_to_insert.values.tolist()])
             engine_dwh.commit()
-            logger.info(f"Loaded {len(clean_df)} orders to DWH.")
-
+            loaded_count = len(clean_df)  # ADD THIS
+            logger.info(f"Loaded {loaded_count} orders to DWH.")
+            # logger.info(f"Loaded {len(clean_df)} orders to DWH.")
+        
         if not orphan_df.empty:
+            orphan_count = len(orphan_df)
             orphan_df['is_customer_sk_orphan'] = orphan_df['customer_sk'].isna()
             orphan_df['is_restaurant_sk_orphan'] = orphan_df['restaurant_id_dwh'].isna()
             orphan_df['is_driver_sk_orphan'] = orphan_df['driver_sk'].isna()
@@ -87,8 +92,10 @@ def load_fact_order(input_df=None, db_name='dwh_db', orphan_db='orphan_db'):
                 extras.execute_values(cur, f"INSERT INTO orphan_fact_orders ({','.join(orphan_cols)}) VALUES %s", 
                                       [tuple(x) for x in df_orphan_insert.values.tolist()])
             engine_orphan.commit()
-            logger.warning(f"Sent {len(orphan_df)} orphan orders to Orphan DB.")
-
+            orphan_count = len(orphan_df)  # ADD THIS
+            logger.warning(f"Sent {orphan_count} orphan orders to Orphan DB.")
+            # logger.warning(f"Sent {len(orphan_df)} orphan orders to Orphan DB.")
+        return loaded_count, orphan_count
     finally:
         engine_dwh.close()
         engine_orphan.close()
@@ -96,7 +103,7 @@ def load_fact_order(input_df=None, db_name='dwh_db', orphan_db='orphan_db'):
 # --- 2. Load Fact Tickets ---
 def load_fact_ticket(input_df=None, db_name='dwh_db', orphan_db='orphan_db'):
     if input_df is None or input_df.empty:
-        return
+        return 0, 0
 
     engine_dwh = connect_to_db.get_postgres_conn(db_name)
     engine_orphan = connect_to_db.get_postgres_conn(orphan_db)
@@ -115,17 +122,20 @@ def load_fact_ticket(input_df=None, db_name='dwh_db', orphan_db='orphan_db'):
         condition = processed_df['orderid_exists'].notna() & processed_df['agent_sk'].notna()
         clean_df = processed_df[condition].copy()
         orphan_df = processed_df[~condition].copy()
+        loaded_count = 0  
+        orphan_count = 0  
 
         if not clean_df.empty:
 
             target_cols = ["ticket_id", "order_id", "created_date_id", "customer_sk", "restaurant_id", "driver_sk","region_id", "agent_sk", "reason_id", "priority_id", "channel_id", "ticket_create_time", "sla_first_due_at", "sla_resolve_due_at", "first_response_at", "resolved_at", "status", "refund_amount", "resolved_on_time", "resolve_from_creating_min", "resolve_from_response_min", "delay_of_resolving"]
             df_to_insert = clean_for_psycopg2(clean_df, target_cols)
-            # clean_df.to
             
             with engine_dwh.cursor() as cur:
                 extras.execute_values(cur, f"INSERT INTO DWH.fact_tickets ({','.join(target_cols)}) VALUES %s", 
                                       [tuple(x) for x in df_to_insert.values.tolist()])
             engine_dwh.commit()
+            loaded_count = len(clean_df)  # ADD THIS
+            logger.info(f"Loaded {loaded_count} tickets to DWH.")
 
         if not orphan_df.empty:
             orphan_df['is_order_id_orphan'] = orphan_df['orderid_exists'].isna()
@@ -139,7 +149,9 @@ def load_fact_ticket(input_df=None, db_name='dwh_db', orphan_db='orphan_db'):
                 extras.execute_values(cur, f"INSERT INTO orphan_fact_tickets ({','.join(orphan_cols)}) VALUES %s", 
                                       [tuple(x) for x in df_to_orphan.values.tolist()])
             engine_orphan.commit()
-
+            orphan_count = len(orphan_df)
+            logger.warning(f"Sent {orphan_count} orphan tickets to Orphan DB.")
+        return loaded_count, orphan_count
     finally:
         engine_dwh.close()
         engine_orphan.close()
