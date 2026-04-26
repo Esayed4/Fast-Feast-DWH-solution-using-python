@@ -21,9 +21,6 @@ from loader.load_stream_data import load_fact_order
 from loader.load_stream_data import load_fact_ticket
 from logger.alert_handler import register_alert_handler
 
-register_alert_handler()
-
-logger = logging.getLogger(__name__)
 
 def run_stream(run_date: str, hour: str):
     """
