@@ -102,7 +102,7 @@ def load_fact_ticket(input_df=None, db_name='dwh_db', orphan_db='orphan_db'):
     engine_orphan = connect_to_db.get_postgres_conn(orphan_db)
 
     try:
-        dim_fact = pd.read_sql("SELECT order_id AS orderid_exists FROM DWH.fact_orders", engine_dwh)
+        dim_fact = pd.read_sql("SELECT order_id AS orderid_exists,region_id FROM DWH.fact_orders", engine_dwh)
         dim_agent = pd.read_sql("SELECT agent_id, agent_sk FROM DWH.dim_agent WHERE is_current=True", engine_dwh)
         dim_cust = pd.read_sql("SELECT customer_id, customer_sk FROM DWH.dim_customer WHERE is_current=True", engine_dwh)
         dim_driv = pd.read_sql("SELECT driver_id, driver_sk FROM DWH.dim_driver WHERE is_current=True", engine_dwh)
@@ -118,7 +118,7 @@ def load_fact_ticket(input_df=None, db_name='dwh_db', orphan_db='orphan_db'):
 
         if not clean_df.empty:
 
-            target_cols = ["ticket_id", "order_id", "created_date_id", "customer_sk", "restaurant_id", "driver_sk", "agent_sk", "reason_id", "priority_id", "channel_id", "ticket_create_time", "sla_first_due_at", "sla_resolve_due_at", "first_response_at", "resolved_at", "status", "refund_amount", "resolved_on_time", "resolve_from_creating_min", "resolve_from_response_min", "delay_of_resolving"]
+            target_cols = ["ticket_id", "order_id", "created_date_id", "customer_sk", "restaurant_id", "driver_sk","region_id", "agent_sk", "reason_id", "priority_id", "channel_id", "ticket_create_time", "sla_first_due_at", "sla_resolve_due_at", "first_response_at", "resolved_at", "status", "refund_amount", "resolved_on_time", "resolve_from_creating_min", "resolve_from_response_min", "delay_of_resolving"]
             df_to_insert = clean_for_psycopg2(clean_df, target_cols)
             # clean_df.to
             
