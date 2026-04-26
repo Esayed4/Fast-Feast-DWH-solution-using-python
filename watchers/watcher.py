@@ -21,6 +21,13 @@ import logging
 import re
 import time
 from pathlib import Path
+import os
+import sys
+
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.append(ROOT_DIR)
+
 from config.settings import STREAM_INPUT_DIR
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
@@ -193,5 +200,3 @@ def watcher(run_date = None):
         observer.stop()
         observer.join()
         logger.info("[WATCHER] Stopped")
-
-

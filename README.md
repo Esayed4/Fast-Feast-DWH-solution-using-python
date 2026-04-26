@@ -306,8 +306,7 @@ provides real-time error alerting via email using multi-threading:
 
 The warehouse follows a **Galaxy Schema** (multiple fact tables sharing conformed dimensions).
 
-See the visual design at `warehouse/DWH design/DWH Galaxy Schema.png`.
-
+<img width="8192" height="6263" alt="Image" src="https://github.com/user-attachments/assets/413cbe7d-9d90-449c-9460-44e633b5ad9b" />
 Key tables:
 - `fact_orders` — core order transactions
 - `fact_tickets` — support/delivery tickets
