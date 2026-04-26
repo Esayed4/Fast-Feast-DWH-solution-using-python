@@ -21,7 +21,6 @@ from loader.connect_to_db import get_postgres_conn # Assuming this contains your
 try:
     from config import settings
     from config.logging_config import setup_logging
-    setup_logging()
     logger = logging.getLogger(__name__)
 except ImportError as e:
     print(f"Import Error: {e}")
